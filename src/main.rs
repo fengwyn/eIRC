@@ -4,7 +4,7 @@ use std::io::{self, Write};
 use std::process::Command;
 use std::path::Path;
 
-fn main() {
+fn print_commands() {
 
     println!("\nWelcome to the eIRC Shell!\nType:
             \t/list servers to list active servers you're in.
@@ -20,7 +20,13 @@ fn main() {
             \t/sendfile filepath <user> to send file to user -- End user must accept sendfile request.
             \t/receivefile <user> to accept file request from user.
             \nEnjoy.");
-            
+
+}
+
+
+fn main() {
+
+    print_commands();
 
     loop {
 
