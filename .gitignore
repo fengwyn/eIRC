@@ -1,2 +1,5 @@
 # Ignore build directory
-target/
+build/
+
+# Ignore editor configs
+.vscode
