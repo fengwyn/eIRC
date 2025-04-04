@@ -1,6 +1,12 @@
-# interface: Contains modules for CLI input/output and commands parsing, allows users to enter shell mode or IRC mode.
+# interface: Contains modules for CLI input/output and commands parsing, 
+# allows users to enter shell mode or IRC mode.
 # The interface shows the CLI allowing the client to enter IRC commands
 # or enter CLI mode which allows ease in sending files and entering chat mode.
+# Cmd Module: https://docs.python.org/3/library/cmd.html
+
+import os
+import subprocess
+
 
 def print_commands():
 
@@ -24,3 +30,21 @@ def print_commands():
            "\t/off to close IRC client.\n"
            "\t/commands to list all eIRC commands.\n"
            "\nEnjoy.\n")
+
+
+def interface():
+
+
+    while True:
+
+        # Starts in IRC mode by default
+        irc_mode = True
+
+        command = input("$ ")
+
+        if irc_mode is True:
+            pass
+
+        elif irc_mode is False:
+            pass
+
