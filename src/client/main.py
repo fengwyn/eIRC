@@ -1,5 +1,8 @@
 # main: Project entry point, allows launching client or server based on Command Line Arguments.
 
+# TODO: Encapsulate within classes, utilize the interface for swapping between IRC and Shell mode
+
+
 import os
 import sys
 import subprocess

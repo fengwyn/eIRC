@@ -1,3 +1,5 @@
+# TODO: File sharing capabilities
+
 # Packet utilities
 import argparse
 import traceback
