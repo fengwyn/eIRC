@@ -48,3 +48,14 @@ def interface():
         elif irc_mode is False:
             pass
 
+
+
+def main():
+
+    print_commands()
+
+    interface()
+
+
+main()
+

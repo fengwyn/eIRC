@@ -12,6 +12,7 @@ from pathlib import Path
 
 
 def print_commands():
+
     print("\nWelcome to the eIRC Shell!")
     print("Type:")
     print("\t/sh to enter shell mode and exit IRC mode.")
@@ -37,6 +38,7 @@ def print_commands():
 
 def interface():
 
+    print_commands()
 
     in_shell_mode = False
 
@@ -115,7 +117,7 @@ def interface():
             elif input_command == "/current":
                 print("Current channel")
 
-            elif input_command == "/commands":
+            elif input_command == "/commands" or input_command == "/help":
                 print_commands()
 
             else:
