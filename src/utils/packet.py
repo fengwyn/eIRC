@@ -17,14 +17,11 @@ from common import SharedQueue
 # Log critical error events from SharedQueue wr/rd, Radio failures and Socket wr operations
 import logging
 
-# Multi-Threaded for Server and Radio operations
-from threading import Lock
-from threading import Thread
 
 mutex = Lock()
 
 # Global Logging Object
-logging.basicConfig(filename="../log/rfserver.log", format='%(asctime)s %(message)s', filemode='a')
+logging.basicConfig(filename="../log/packet.log", format='%(asctime)s %(message)s', filemode='a')
 logger = logging.getLogger()
 
 
@@ -144,7 +141,7 @@ class PacketSender(Thread):
             self.client.connect((self.remote_hostname, self.remote_port))
         
         except Exception as e:
-            logger.error(f"Error during RFPacketSender.connect(): {e}")
+            logger.error(f"Error during PacketSender.connect(): {e}")
 
     # Safely close socket connection
     def close_socket(self):
@@ -154,7 +151,7 @@ class PacketSender(Thread):
             self.client.close()
             self.client = None
         except Exception as e:
-            logger.error(f"Error during RFPacketSender close_socket(): {e}")
+            logger.error(f"Error during PacketSender close_socket(): {e}")
 
 
     def send(self, packet : bytes):
@@ -167,7 +164,7 @@ class PacketSender(Thread):
             print(f"Sending packet len: {len(packet)} packet: {packet}")
             self.client.sendall(packet)
         except Exception as e:
-            logger.error(f"Error during RFPacketSender.send(): {e}")
+            logger.error(f"Error during PacketSender.send(): {e}")
 
 
     def send_iter(self, packet: bytes):
@@ -187,7 +184,7 @@ class PacketSender(Thread):
             print(f"Sent {total_sent}/{len(packet)} bytes successfully: {packet}")
 
         except Exception as e:
-            logger.error(f"Error during RFPacketSender.send_iter(): {e}")
+            logger.error(f"Error during PacketSender.send_iter(): {e}")
 
 
     def receive(self):
@@ -198,5 +195,5 @@ class PacketSender(Thread):
                 print(f"Received response: {recv}")
 
         except Exception as e:
-            logger.error(f"Error during RFPacketSender.receive(): {e}")
+            logger.error(f"Error during PacketSender.receive(): {e}")
             return None

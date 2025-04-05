@@ -4,39 +4,52 @@
 import socket
 import threading
 
-# Choosing Nickname
-nickname = input("Choose your nickname: ")
+try:
+    # Choosing Username
+    username = input("Choose your username: ")
 
-# Connecting To Server
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(('127.0.0.1', 55555))
+    # Connecting To Server
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect(('localhost', 8888))
 
-# Listening to Server and Sending Nickname
-def receive():
-    while True:
-        try:
-            # Receive Message From Server
-            # If 'NICK' Send Nickname
-            message = client.recv(1024).decode('ascii')
-            if message == 'NICK':
-                client.send(nickname.encode('ascii'))
-            else:
-                print(message)
-        except:
-            # Close Connection When Error
-            print("An error occured!")
-            client.close()
-            break
+    # Listening to Server and Sending Username
+    def receive():
 
-# Sending Messages To Server
-def write():
-    while True:
-        message = '{}: {}'.format(nickname, input(''))
-        client.send(message.encode('ascii'))
+        while True:
+            try:
+                # Receive Message From Server
+                # If 'USER' Send Username
+                message = client.recv(1024).decode('ascii')
+                if message == 'USER':
+                    client.send(username.encode('ascii'))
+                else:
+                    print(message)
+            except:
+                # Close Connection When Error
+                print("An error occured!")
+                client.close()
+                break
 
-# Starting Threads For Listening And Writing
-receive_thread = threading.Thread(target=receive)
-receive_thread.start()
+    # Sending Messages To Server
+    def write():
 
-write_thread = threading.Thread(target=write)
-write_thread.start()
+        while True:        
+            try:
+                message = '{}: {}'.format(username, input(''))
+                client.send(message.encode('ascii'))
+            except KeyboardInterrupt:
+                print("<KeyboardInterrupt>")
+                client.shutdown()
+                client.close()
+
+    # Starting Threads For Listening And Writing
+    receive_thread = threading.Thread(target=receive)
+    receive_thread.start()
+
+    write_thread = threading.Thread(target=write)
+    write_thread.start()
+
+except KeyboardInterrupt:
+    print("<KeyboardInterrupt>")
+    client.shutdown()
+    client.close()
