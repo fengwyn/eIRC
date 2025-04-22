@@ -10,7 +10,7 @@ try:
 
     # Connecting To Server
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.connect(('localhost', 8888))
+    client.connect(('192.168.0.13', 8888))
 
     # Listening to Server and Sending Username
     def receive():
