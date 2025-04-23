@@ -9,6 +9,8 @@ logger = logging.getLogger()
 
 
 # [MUTEX] Shared Resource Queue <Implementation>: 
+# NOTE: SharedQueue is a BUFFER ---- Reading from Buffer frees current rd_ptr space
+# If only want to read data, then use get_queue(), it'll return the object <List> , ready for printing
 class SharedQueue:
 
     def __init__(self, depth):
@@ -49,6 +51,17 @@ class SharedQueue:
             logger.error("Error: Device Failed ShareQueue read_data")
 
 
+    # Resizes queue depth
+    def resize(self, new_depth):
+        
+        if new_depth > self.get_count():
+            print(f"Can't shrink: {self.get_count} current depth exceeds new depth: {new_depth}")
+            print("Remove users from queue.")
+
+        self.depth = new_depth
+        self.queue[:new_depth] * None
+
+
     def reset(self):
 
         if self.get_Full_flag:
@@ -59,7 +72,7 @@ class SharedQueue:
         return False
 
 
-    # Get Queue item
+    # Get Queue Object <List>
     def get_queue(self):
         return self.queue
 
@@ -72,9 +85,9 @@ class SharedQueue:
     
     def get_Empty_flag(self):
         return self.count == 0
-
+    # Almost Empty
     def get_AE_flag(self):
         return self.count < (self.depth // 4)   # floor 25% of depth
-
+    # Almost Full
     def get_AF_flag(self):
         return self.count > ((self.depth * 3) // 4) # floor 75% of depth
