@@ -1,105 +1,75 @@
 # TODO: File sharing capabilities
 
 # Packet utilities
-import argparse
-import traceback
-import sys
-import socket
 import struct
 # Allows to store data received as a JSON, which we'll utilize to store in DB
-import json
-import time
 from datetime import datetime
 
-# SharedQueue buffer
-from common import SharedQueue
-
-# Log critical error events from SharedQueue wr/rd, Radio failures and Socket wr operations
+# Log critical error events from wr/rd, Radio failures and Socket wr operations
 import logging
 
-
-mutex = Lock()
-
 # Global Logging Object
-logging.basicConfig(filename="../log/packet.log", format='%(asctime)s %(message)s', filemode='a')
+logging.basicConfig(filename="log/packet.log", format='%(asctime)s %(message)s', filemode='a')
 logger = logging.getLogger()
 
 
-# Builds packet containing local hostname & port
-# date and queue objects
-def build_packet(hostname: str, port: int, Queue_Object: SharedQueue) -> bytes:
+# Builds packet, takes in username, message as parameters
+# calls current time and packages/returns all as bytes
+def build_packet(username: str, message: str) -> bytes:
+    
+    username_bytes = username.encode('utf-8')
+    message_bytes = message.encode('utf-8')
 
-    # Encode for struct pack
-    hostname_bytes = hostname.encode('utf-8')
-    hostname_len   = len(hostname_bytes)
-
-    # SharedQueue queue and item count
-    queue        = Queue_Object.get_queue()
-    queue_length = Queue_Object.get_count()
+    username_len = len(username_bytes)
+    message_len = len(message_bytes)
 
     cur_date = "{:%B %d %Y %H:%M:%S}".format(datetime.now())
+    cur_date_bytes = cur_date.encode('utf-8')
+    cur_date_len = len(cur_date_bytes)
 
-    date_bytes = cur_date.encode('utf-8')
-    date_len = len(date_bytes)
-
-    # Packing format: Little Endian Hs[]HHs[]Hh[]
-    packetformat = f'<H{hostname_len}sHH{date_len}sH{queue_length}h'
-
-    packet = struct.pack(packetformat, 
-                        hostname_len, hostname_bytes, 
-                        port, 
-                        date_len, date_bytes, 
-                        queue_length, *queue)
+    packet_format = f'<H{username_len}sH{message_len}sH{cur_date_len}s'
+    packet = struct.pack(
+            packet_format,
+            username_len, username_bytes,
+            message_len, message_bytes,
+            cur_date_len, cur_date_bytes)
 
     return packet
 
 
-def unpack_packet(packet: bytes):
-    
-    print("Unpacking packet!")
+# Unpacks packet built by build_packet()
+def unpack_packet(packet: bytes) -> dict:
 
+    offset = 0
 
-    # Unpack hostname length
-    hostname_len = struct.unpack_from('<H', packet, 0)[0]
-    offset = 2
-
-    # Unpack hostname
-    hostname = struct.unpack_from(f'<{hostname_len}s', packet, offset)[0].decode('utf-8')
-    offset += hostname_len
-
-    # Unpack port
-    port = struct.unpack_from('<H', packet, offset)[0]
+    # Unpack username
+    username_len = struct.unpack_from('<H', packet, offset)[0]
     offset += 2
+    username = struct.unpack_from(f'<{username_len}s', packet, offset)[0].decode('utf-8')
+    offset += username_len
 
-    # Unpack date length
-    date_len = struct.unpack_from('<H', packet, offset)[0]
+    # Unpack message
+    message_len = struct.unpack_from('<H', packet, offset)[0]
     offset += 2
+    message = struct.unpack_from(f'<{message_len}s', packet, offset)[0].decode('utf-8')
+    offset += message_len
 
     # Unpack date
-    date = struct.unpack_from(f'<{date_len}s', packet, offset)[0].decode('utf-8')
-    offset += date_len
-
-    # Unpack queue length
-    queue_length = struct.unpack_from('<H', packet, offset)[0]
+    date_len = struct.unpack_from('<H', packet, offset)[0]
     offset += 2
-
-    # Unpack queue items
-    queue = list(struct.unpack_from(f'<{queue_length}h', packet, offset))
+    date_str = struct.unpack_from(f'<{date_len}s', packet, offset)[0].decode('utf-8')
 
     return {
-        'hostname': hostname,
-        'port': port,
-        'date': date,
-        'queue_length': queue_length,
-        'queue': queue
+        'username': username,
+        'message': message,
+        'date': date_str
     }
 
 
 
 
-
-
-
+#NOTE: Requires threading Thread
+'''
 # [THREAD] Producer: Builds packet frames from RF data
 # The buffer will have an 'almost full' flag, where in >= %75
 # of its size is reached will build the frame or if a certain
@@ -197,3 +167,4 @@ class PacketSender(Thread):
         except Exception as e:
             logger.error(f"Error during PacketSender.receive(): {e}")
             return None
+'''

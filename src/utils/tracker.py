@@ -27,6 +27,7 @@ class Tracker(threading.Thread):
         # inhereted child Classes Tracker Server and Chat Server
         # which'll have these values behave differently
 
+        # NOTE: admins and members are shared resources! Utilize mutex prior to writing
         # Admins: username : address
         self.admins = dict()
         # Members: username / servername : address
@@ -113,6 +114,8 @@ class Tracker(threading.Thread):
         return self.address
 
 # Inhereted Class <Tracker> - Tracker Server keeps a directory of active chat servers
+# When a user creates a server, it should redirect them automatically to the server 
+# as well as register them as an administrator ---- This will be done on server/main.py (?)
 class TrackerServer(Tracker):
 
     def __init__(self, name: str, address: str,
