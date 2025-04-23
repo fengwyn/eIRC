@@ -12,28 +12,34 @@ import shlex
 from pathlib import Path
 
 
-# IRC Commands
+# Implemented IRC Commands
+commands = {"/sh", "/esh", "/servers", "/users", "/current", "/whisper", 
+            "/join", "/accept", "/reject", "/leave", "/delete", 
+            "/accept", "/reject", "/sendfile", "/receivefile", 
+            "/off", "/commands"}
+
+# Prints available IRC Commands
 def print_commands():
 
     print("\nWelcome to the eIRC Shell!")
     print("Type:")
-    print("\t/sh to enter shell mode and exit IRC mode.")
-    print("\t/esh to exit shell mode and enter into IRC mode.")
-    print("\t/list servers to list active servers you're in.")
-    print("\t/list users to list active users in your friends list.")
-    print("\t/current prints current channel.")
-    print("\t/whisper <user> to send direct message to user.")
-    print("\t/join <server> <key> to join private server.")
-    print("\t/accept <server> to accept server invitation.")
-    print("\t/reject <server> to reject server invitation.")
-    print("\t/leave <server> to leave server.")
-    print("\t/delete <user> to delete user from friends list.")
-    print("\t/accept <user> to accept user friend request.")
-    print("\t/reject <user> to reject user friend request.")
-    print("\t/sendfile filepath <user> to send file to user -- End user must accept sendfile request.")
-    print("\t/receivefile <user> to accept file request from user.")
-    print("\t/off to close IRC client.")
-    print("\t/commands to list all eIRC commands.")
+    print("\t/sh: to enter shell mode and exit IRC mode.")
+    print("\t/esh: to exit shell mode and enter into IRC mode.")
+    print("\t/servers: to list active servers you're in.")
+    print("\t/users: to list active users in your friends list.")
+    print("\t/current: prints current channel.")
+    print("\t/whisper <user>: to send direct message to user.")
+    print("\t/join <server> <key>: to join private server.")
+    print("\t/accept <server>: to accept server invitation.")
+    print("\t/reject <server>: to reject server invitation.")
+    print("\t/leave <server>: to leave server.")
+    print("\t/delete <user>: to delete user from friends list.")
+    print("\t/accept <user>: to accept user friend request.")
+    print("\t/reject <user>: to reject user friend request.")
+    print("\t/sendfile filepath <user>: to send file to user -- End user must accept sendfile request.")
+    print("\t/receivefile <user>: to accept file request from user.")
+    print("\t/off: to close IRC client.")
+    print("\t/commands: to list all eIRC commands.")
     print("\nEnjoy.")
 
 
@@ -136,23 +142,24 @@ def interface():
             
             # Handle IRC commands
             else:
+                # Use match-case (switch) for mass conditional handling
+                match input_command:
 
-                if input_command == "/list":
-                    print("/list servers")
+                    case "/commands":
+                        print_commands()
 
-                elif input_command == "/current":
-                    print("Current channel")
+                    case "/servers":
+                        print("Listing active servers...")
 
-                elif input_command == "/commands" or input_command == "/help":
-                    print_commands()
+                    case "/current":
+                        print("Current channel: ")
 
-                else:
-                    print(f"IRC Command: {input_command}")
+                    case _:
+                        print("Invalid Command!")
 
 
         # Manage any on-going critical processes, i.e sockets for safe shutdown
         except KeyboardInterrupt:
-
             print("\tKeyboard Interrupt...\n\tSafely shutting down application.")
             sys.exit()
             pass
