@@ -1,3 +1,6 @@
+# NOTE: Run as: python -m src.server.server --hostname localhost --port 8888 --maxconns 32 --messagelength 64
+# This is so that we can utilize build_packet which is located in src/utils
+
 # TODO: Allow users create chatrooms and send chatroom invitations
 
 # server: Contains modules for handling connections, channel management and administrative commands.
@@ -9,10 +12,10 @@ import threading
 import logging
 import argparse
 import time
-
+import struct
 
 # Global Logging Object
-logging.basicConfig(filename="../../log/server.log", format='%(asctime)s %(message)s', filemode='a')
+logging.basicConfig(filename="log/server.log", format='%(asctime)s %(message)s', filemode='a')
 logger = logging.getLogger()
 
 
@@ -38,21 +41,6 @@ class Server(threading.Thread):
         self.clients = []
         self.usernames = []
 
-        pass
-
-
-    # # Connection Data
-    # host = '127.0.0.1'
-    # port = 55555
-
-    # # Starting Server
-    # server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # server.bind((host, port))
-    # server.listen()
-
-    # Lists For Clients and Their Nicknames
-    # clients = []
-    # nicknames = []
 
     # Sending Messages To All Connected Clients
     def broadcast(self, message):
@@ -74,6 +62,7 @@ class Server(threading.Thread):
             try:
                 # Broadcasting Messages
                 message = client.recv(1024)
+                print(message.decode('utf-8'))
                 self.broadcast(message)
             except:
                 # Removing And Closing Clients
