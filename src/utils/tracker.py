@@ -41,7 +41,7 @@ class Tracker(threading.Thread):
     #Grants admin privileges to a user    
     def add_admin(self, user: str, addr: str):
     
-        with self.lock:
+        with self.lock.locked():
             self.admins[user] = addr
             logging.info(f"Added admin {user}@{addr} to tracker '{self.name}'")
             self.lock.release()
@@ -49,7 +49,7 @@ class Tracker(threading.Thread):
     #Revokes admin privileges from a user   
     def remove_admin(self, user: str):
 
-        with self.lock:
+        with self.lock.locked():
             if user in self.admins:
                 del self.admins[user]
                 logging.info(f"Removed admin {user} from tracker '{self.name}'")
@@ -58,7 +58,7 @@ class Tracker(threading.Thread):
     #Returns a copy of current admins
     def list_admins(self) -> dict:
 
-        with self.lock:
+        with self.lock.locked():
             admins = dict(self.admins)
             self.lock.release()
             return admins
@@ -69,7 +69,7 @@ class Tracker(threading.Thread):
     # Registers a member (user or server) to the tracker
     def add_member(self, member: str, addr: str):
 
-        with self.lock:
+        with self.lock.locked():
             self.members[member] = addr
             logging.info(f"Added member {member}@{addr} to tracker '{self.name}'")
             self.lock.release()
@@ -77,7 +77,7 @@ class Tracker(threading.Thread):
     # Deregisters a member from the tracker
     def remove_member(self, member: str):
 
-        with self.lock:
+        with self.lock.locked():
             if member in self.members:
                 del self.members[member]
                 logging.info(f"Removed member {member} from tracker '{self.name}'")
@@ -86,7 +86,7 @@ class Tracker(threading.Thread):
     # Returns a copy of current members  
     def list_members(self) -> dict:
   
-        with self.lock:
+        with self.lock.locked():
             members = dict(self.members)
             self.lock.release()
             return members
@@ -94,13 +94,13 @@ class Tracker(threading.Thread):
     
     # Server info. setters/getters    
     def set_name(self, name: str):
-        with self.lock:
+        with self.lock.locked():
             self.name = name
             self.lock.release()
     
 
     def set_address(self, address: str):
-        with self.lock:
+        with self.lock.locked():
             self.address = address
             self.lock.release()
 
@@ -134,7 +134,6 @@ class TrackerServer(Tracker):
 
     # Returns all registered chat servers
     def get_server_list(self) -> dict:
-        
         return self.list_members()
 
 # Inhereted Class <Tracker> - Chat Tracker for tracking active users on a chat server
