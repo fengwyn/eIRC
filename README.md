@@ -11,14 +11,15 @@ This is so that we can utilize build_packet which is located in src/utils
 
 ```
 [Directory Structure]
-src/                        <- Run application from here
-├── client/
-│   ├── __init__.py
-│   └── client.py
-├── server/
-│   ├── __init__.py
-│   └── server.py
-└── utils/
-    ├── __init__.py
-    └── packet.py
+    eIRC/               <- Run application from here
+    |--src/                        
+        ├── client/
+        │   ├── __init__.py
+        │   └── client.py
+        ├── server/
+        │   ├── __init__.py
+        │   └── server.py
+        └── utils/
+            ├── __init__.py
+            └── packet.py
 ```
