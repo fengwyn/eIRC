@@ -12,7 +12,9 @@ import threading
 import logging
 import argparse
 import time
-import struct
+from ..utils.packet import build_packet, unpack_packet
+
+
 
 # Global Logging Object
 logging.basicConfig(filename="log/server.log", format='%(asctime)s %(message)s', filemode='a')
@@ -59,11 +61,27 @@ class Server(threading.Thread):
     def handle(self, client):
 
         while True:
+            
             try:
                 # Broadcasting Messages
-                message = client.recv(1024)
-                print(message.decode('utf-8'))
-                self.broadcast(message)
+                # message = client.recv(1024)
+                packet = bytes(client.recv(1024))
+
+                # Unpack packet
+                read_packet: dict() = unpack_packet(packet)
+                username, body, date = read_packet['username'], read_packet['message'], read_packet['date']
+
+                if body[0] == '/':
+                    print(f"Command: {body}")
+
+                message = username + ': ' + body
+
+                # print(message.decode('utf-8'))
+                print(message)
+
+                # Broadcast the message to everyone <sending the packet
+                self.broadcast(packet)
+
             except:
                 # Removing And Closing Clients
                 index = self.clients.index(client)
@@ -75,28 +93,38 @@ class Server(threading.Thread):
                 break
 
 
-    # Receiving / Listening Function
+    # Receiving Function ---- The current implementation works by receiving when clients connect (verify)
+    # NOTE: receiving and listen ARE different functionalities, see UNIX Socket Programming for more!
     def receive(self):
         
         while True:
-            # Accept Connection
-            client, address = self.server.accept()
-            print("Connected with {}".format(str(address)))
+            
+            try:
+                # Accept Connection
+                client, address = self.server.accept()
+                print("Connected with {}".format(str(address)))
 
-            # Request And Store Username
-            client.send('USER'.encode('ascii'))
-            user = client.recv(1024).decode('ascii')
-            self.usernames.append(user)
-            self.clients.append(client)
+                # Request And Store Username
+                client.send('USER'.encode('ascii'))
+                user = client.recv(1024).decode('ascii')
+                self.usernames.append(user)
+                self.clients.append(client)
 
-            # Print And Broadcast Username
-            print("Username is {}".format(user))
-            self.broadcast("{} joined!".format(user).encode('ascii'))
-            client.send('Connected to server!'.encode('ascii'))
+                # Print And Broadcast Username
+                print("Username is {}".format(user))
+                self.broadcast("{} joined!".format(user).encode('ascii'))
+                client.send('Connected to server!'.encode('ascii'))
 
-            # Start Handling Thread For Client
-            thread = threading.Thread(target=self.handle, args=(client,))
-            thread.start()
+                # Start Handling Thread For Client  (packets sent by clients are handled here)
+                thread = threading.Thread(target=self.handle, args=(client,))
+                thread.start()
+            
+            except KeyboardInterrupt:
+                self.server.shutdown(socket.SHUT_RDWR)
+                self.server.close()
+
+            except Exception as e:
+                logger.error(f"Unhandled Exception during receive(): {e}")
 
 
     def server_start(self):
@@ -104,13 +132,15 @@ class Server(threading.Thread):
         try:
             self.server.listen()
             self.receive()
-        except Exception as e:
-            logger.error(f"Error during server_start() excution: {e}")
+
         except KeyboardInterrupt:
+
             logger.info("Manual Server Interrupt <KeyboardInterrupt>")
-            self.server.shutdown()
+            self.server.shutdown(socket.SHUT_RDWR)
             self.server.server_close()
 
+        except Exception as e:
+            logger.error(f"Error during server_start() excution: {e}")
 
 # Parameters:  ---hostname <address : Str> --port <port : int> --maxconns <max connections : int> --messagelength <message length: int>
 # Running:      $ python3.13 server.py --hostname localhost --port 8888 --maxconns 32 --messagelength 64
@@ -136,48 +166,3 @@ if __name__ == "__main__":
 
     server = Server(hostname, port, maximum_connections, message_length)
     server.server_start()
-
-
-
-
-
-
-## Auxiliary ---- May become useful in the future
-
-
-##
-# TCP Socket Server handler, instanced once per connection to the server,
-# overrides the handle() method to implement client communication
-# class ServerTCPHandler(socketserver.BaseRequestHandler):
-
-#     def handle(self):
-        
-#         # self.request is the TCP socket connected to the client
-#         # self.data = b""
-#         self.data = bytes(self.request.recv(1024))
-
-#         print(f"self.data: {self.data}")
-
-#         if self.data is None:
-#             print("No data received from client.")
-#             return
-
-#         try:
-#             # Unpack the data packet
-#             packet = unpack_packet(self.data)
-#             print(packet)
-#             # Send acknowledge request
-#             self.request.sendall(b"Ack")
-        
-#         except Exception as e:
-#             logger.error(f"Error during handle() data unpacking: {e}")
-#             print(f"Error processsing packet: {e}")
-
-# ##
-# # A wrapper which enables threaded utilization in the server and allows
-# # Class Server to properly be non-blocking
-# class ThreadedTCPServer(socketserver.ThreadingTCPServer):
-
-#     # Avoids "address already in use", useful during development
-#     # and maintanance
-#     allow_reuse_address = True
