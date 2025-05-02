@@ -13,7 +13,6 @@ import time
 from ..utils.packet import build_packet, unpack_packet
 
 
-
 # Global Logging Object
 logging.basicConfig(filename="log/server.log", format='%(asctime)s %(message)s', filemode='a')
 logger = logging.getLogger()
@@ -146,10 +145,10 @@ class Server(threading.Thread):
 if __name__ == "__main__":
 
     # Parse command line arguments
-    parser = argparse.ArgumentParser(prog="server.py", description="Listens to packets from RF Server nodes.")
-    parser.add_argument('-n', '--hostname', type=str, default='localhost', help="Hostname for the Server.")
-    parser.add_argument('-p', '--port', type=int, default=8888, help="Port number for Server.")
-    parser.add_argument('-m', '--maxconns', type=int, default=32, help="Maximum Server connections from clients.")
+    parser = argparse.ArgumentParser(prog="server.py", description="Chat Room Server")
+    parser.add_argument('-n', '--hostname', type=str, default='localhost', help="Hostname for the Server")
+    parser.add_argument('-p', '--port', type=int, default=8888, help="Port number for Server")
+    parser.add_argument('-m', '--maxconns', type=int, default=32, help="Maximum Server connections from clients")
     parser.add_argument('-l', '--messagelength', type=int, default=128, help="Message length")
 
     args = parser.parse_args()
