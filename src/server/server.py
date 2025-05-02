@@ -1,9 +1,7 @@
 # NOTE: Run as: python -m src.server.server --hostname localhost --port 8888 --maxconns 32 --messagelength 64
 # This is so that we can utilize build_packet which is located in src/utils
 
-# TODO: Allow users create chatrooms and send chatroom invitations
-
-# server: Contains modules for handling connections, channel management and administrative commands.
+# server: Handles socket server and implements socket communications between clients
 # NOTE: https://docs.python.org/3.11/howto/sockets.html
 
 import socketserver
@@ -69,12 +67,13 @@ class Server(threading.Thread):
 
                 # Unpack packet
                 read_packet: dict() = unpack_packet(packet)
-                username, body, date = read_packet['username'], read_packet['message'], read_packet['date']
+                header, body, date = read_packet['header'], read_packet['body'], read_packet['date']
 
+                # The start of a message/body starts with '/' if it's a command
                 if body[0] == '/':
                     print(f"Command: {body}")
 
-                message = username + ': ' + body
+                message = header + ': ' + body
 
                 # print(message.decode('utf-8'))
                 print(message)

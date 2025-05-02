@@ -1,35 +1,34 @@
 # Packet utilities
 import struct
-# Allows to store data received as a JSON, which we'll utilize to store in DB
 from datetime import datetime
 
-# Log critical error events from wr/rd, Radio failures and Socket wr operations
+# Log critical error events from wr/rd
 import logging
 
 # Global Logging Object
-logging.basicConfig(filename="log/packet.log", format='%(asctime)s %(message)s', filemode='a')
+logging.basicConfig(filename="log/packet.log", format='%(asctime)s %(body)s', filemode='a')
 logger = logging.getLogger()
 
 
-# Builds packet, takes in username, message as parameters
+# Builds packet, takes in header, body as parameters
 # calls current time and packages/returns all as bytes
-def build_packet(username: str, message: str) -> bytes:
+def build_packet(header: str, body: str) -> bytes:
     
-    username_bytes = username.encode('utf-8')
-    message_bytes = message.encode('utf-8')
+    header_bytes = header.encode('utf-8')
+    body_bytes = body.encode('utf-8')
 
-    username_len = len(username_bytes)
-    message_len = len(message_bytes)
+    header_len = len(header_bytes)
+    body_len = len(body_bytes)
 
     cur_date = "{:%B %d %Y %H:%M:%S}".format(datetime.now())
     cur_date_bytes = cur_date.encode('utf-8')
     cur_date_len = len(cur_date_bytes)
 
-    packet_format = f'<H{username_len}sH{message_len}sH{cur_date_len}s'
+    packet_format = f'<H{header_len}sH{body_len}sH{cur_date_len}s'
     packet = struct.pack(
             packet_format,
-            username_len, username_bytes,
-            message_len, message_bytes,
+            header_len, header_bytes,
+            body_len, body_bytes,
             cur_date_len, cur_date_bytes)
 
     return packet
@@ -40,17 +39,17 @@ def unpack_packet(packet: bytes) -> dict:
 
     offset = 0
 
-    # Unpack username
-    username_len = struct.unpack_from('<H', packet, offset)[0]
+    # Unpack header
+    header_len = struct.unpack_from('<H', packet, offset)[0]
     offset += 2
-    username = struct.unpack_from(f'<{username_len}s', packet, offset)[0].decode('utf-8')
-    offset += username_len
+    header = struct.unpack_from(f'<{header_len}s', packet, offset)[0].decode('utf-8')
+    offset += header_len
 
-    # Unpack message
-    message_len = struct.unpack_from('<H', packet, offset)[0]
+    # Unpack body
+    body_len = struct.unpack_from('<H', packet, offset)[0]
     offset += 2
-    message = struct.unpack_from(f'<{message_len}s', packet, offset)[0].decode('utf-8')
-    offset += message_len
+    body = struct.unpack_from(f'<{body_len}s', packet, offset)[0].decode('utf-8')
+    offset += body_len
 
     # Unpack date
     date_len = struct.unpack_from('<H', packet, offset)[0]
@@ -58,7 +57,7 @@ def unpack_packet(packet: bytes) -> dict:
     date_str = struct.unpack_from(f'<{date_len}s', packet, offset)[0].decode('utf-8')
 
     return {
-        'username': username,
-        'message': message,
+        'header': header,
+        'body': body,
         'date': date_str
     }

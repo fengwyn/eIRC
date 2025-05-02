@@ -35,9 +35,9 @@ def receive():
             # Otherwise, it's one of our structured packets
             try:
                 read_packet = unpack_packet(packet)
-                # Avoid shadowing the global `username` here:
-                sender   = read_packet['username']
-                body     = read_packet['message']
+                # Avoid shadowing the global 'username' here:
+                sender   = read_packet['header']
+                body     = read_packet['body']
                 datetime = read_packet['date']
                 
                 print(f"[{datetime}] {sender}: {body}")
