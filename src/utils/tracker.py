@@ -1,4 +1,6 @@
+# tracker.py: Contains modules for server/channel management
 # Tracker Object for Handling Hosts, User logs and Redirect Connections
+
 # from common import SharedQueue    # <--- Useful if buffering is required
 import logging
 import threading
@@ -64,7 +66,6 @@ class Tracker(threading.Thread):
 
         with self.lock:
             admins = dict(self.admins)
-
             return admins
 
 
@@ -89,21 +90,22 @@ class Tracker(threading.Thread):
 
     # Returns a copy of current members  
     def list_members(self) -> dict:
-  
+
         with self.lock:
             members = dict(self.members)
-
             return members
 
     
     # Server info. setters/getters    
     def set_name(self, name: str):
+
         with self.lock.locked():
             self.name = name
 
     
 
     def set_address(self, address: str):
+
         with self.lock.locked():
             self.address = address
 

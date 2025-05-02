@@ -3,6 +3,7 @@ import threading
 import argparse
 from ..utils.tracker import ServerTracker
 from ..utils.packet import unpack_packet, build_packet
+from ..utils.interface import get_command_text
 # The implemented Server object shall be utilized as a Chat Room for the redirect server
 from .server import Server as ChatRoomServer
 
@@ -65,11 +66,16 @@ class TrackerDaemon:
         except KeyboardInterrupt:
             print("Shutting down tracker.")
             self.sock.close()
-
+        except Exception as e:
+            print(f"TrackerDaemon Exception: {e}")
+            self.sock.close()
     
     def handle(self, conn, addr):
 
-        conn.send(b"Welcome to eIRC - Tracker Server!")
+        # conn.send(b"Welcome to eIRC - Tracker Server!")
+        packet = None
+        packet = build_packet("Welcome to eIRC\nTracker Server", get_command_text())
+        conn.send(packet)
         
         try:
             while True:
@@ -84,69 +90,94 @@ class TrackerDaemon:
 
                 # Unpack packet
                 read_packet: dict() = unpack_packet(packet)
-                username, body, date = read_packet['username'], read_packet['message'], read_packet['date']
+                header, body, date = read_packet['header'], read_packet['body'], read_packet['date']
+                # Initialize command buffer
+                command = None
+
+                if not body.startswith('/'):
+                    print("Regular Chat")
+                    continue
 
                 if body[0] == '/':
                     print(f"Command: {body}")
                     command = body.strip().split()                
                     print(f"Command with Args: {command}")
 
-                
-                if cmd == '/create':
-                    if len(parts) < 3:
-                        conn.send(b"ERROR Usage: /create <name> <admin_user>\n")
-                        continue
+                    # Utilize switch-case for handling all commands, or integrate via proper function/module
+                    if command[0] == '/create':
+                        if len(parts) < 3:
+                            packet = build_packet("ERROR Usage", "/create <name> <admin_user>")
+                            # conn.send(b"ERROR Usage: /create <name> <admin_user>\n")
+                            continue
                     
-                    name = parts[1]
-                    admin_user = parts[2]
+                        name = parts[1]
+                        admin_user = parts[2]
 
-                    # allocate a port for new chat server
-                    chat_port = self.allocator.allocate()
+                        # allocate a port for new chat server
+                        chat_port = self.allocator.allocate()
 
-                    # start chat server instance
-                    chat_srv = ChatRoomServer(self.host, chat_port, self.max_conns, self.msg_length)
-                    threading.Thread(target=chat_srv.server_start, daemon=True).start()
+                        # start chat server instance
+                        chat_srv = ChatRoomServer(self.host, chat_port, self.max_conns, self.msg_length)
+                        threading.Thread(target=chat_srv.server_start, daemon=True).start()
 
-                    # register in tracker
-                    admin_address = f"{addr[0]}:{addr[1]}"
-                    self.tracker.register_server(
-                        name,
-                        f"{self.host}:{chat_port}",
-                        admin_user=admin_user,
-                        admin_address=admin_address,
-                        is_private=False,
-                        passkey=""
-                    )
+                        # register in tracker
+                        admin_address = f"{addr[0]}:{addr[1]}"
+                        self.tracker.register_server(
+                            name,
+                            f"{self.host}:{chat_port}",
+                            admin_user=admin_user,
+                            admin_address=admin_address,
+                            is_private=False,
+                            passkey=""
+                        )
 
-                    conn.send(f"CHAT_CREATED {name} {self.host} {chat_port}\n".encode('utf-8'))
-
-                
-                elif cmd == '/list':
-                    
-                    servers = self.tracker.get_server_list()
-                    resp = "ACTIVE_SERVERS\n"
-                    for sname, saddr in servers.items():
-                        resp += f"{sname} @ {saddr}\n"
-                    conn.send(resp.encode('utf-8'))
+                        packet = build_packet("CHAT CREATED", f"{name} {self.host} {chat_port}")
+                        conn.send(packet)
+                        # conn.send(f"CHAT_CREATED {name} {self.host} {chat_port}\n".encode('utf-8'))
 
                 
-                elif cmd == '/join':
-                    
-                    if len(parts) < 2:
-                        conn.send(b"ERROR Usage: /join <name>\n")
-                        continue
-                    
-                    name = parts[1]
-                    servers = self.tracker.get_server_list()
-                    
-                    if name in servers:
-                        conn.send(f"JOIN {servers[name]}\n".encode('utf-8'))
+                    elif command == '/list':
+                        
+                        servers = self.tracker.get_server_list()
+                        resp = "ACTIVE_SERVERS\n"
+                        for sname, saddr in servers.items():
+                            resp += f"{sname} @ {saddr}\n"
+
+                        packet = build_packet("/list", resp)
+                        conn.send(packet)
+                        # conn.send(resp.encode('utf-8'))
+
+
+                    elif command == '/join':
+                        
+                        if len(parts) < 2:
+                            packet = build_packet("ERROR Usage", "/join <name>")
+                            conn.send(packet)
+                            # conn.send(b"ERROR Usage: /join <name>\n")
+                            continue
+                        
+                        name = parts[1]
+                        servers = self.tracker.get_server_list()
+                        
+                        if name in servers:
+                            packet = build_packet("JOIN", f"{servers[name]}")
+                            conn.send(packet)
+                            # conn.send(f"JOIN {servers[name]}\n".encode('utf-8'))
+                        else:
+                            packet = build_packet("ERROR", "Server not found")
+                            conn.send(packet)
+                            # conn.send(b"ERROR Server not found\n")
+
                     else:
-                        conn.send(b"ERROR Server not found\n")
+                        packet = build_packet("ERROR", "Unknown command")
+                        conn.send(packet)
+                        # conn.send(b"ERROR Unknown command\n")
 
                 else:
-                    conn.send(b"ERROR Unknown command\n")
-        
+                    print("eIRC - Command Usage")
+                    packet = build_packet("Command Usage", get_command_text())
+                    conn.send(packet)
+
         finally:
             conn.close()
 
