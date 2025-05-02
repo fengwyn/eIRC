@@ -1,121 +1,155 @@
 # Run from project root:
-#   $ ./eIRC/
 #   $ python -m src.client.client
 
 import socket
 import threading
-import errno    # Glorious UNIX error handling
-
+import errno    # UNIX error codes
 from ..utils.packet import build_packet, unpack_packet
 
-# Choosing Username
-username = input("Choose your username: ")
-
-# Connecting To Server
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(('localhost', 8888))
 
 
-# Listening to Server and Sending Username
+# Threaded socket lock
+client_lock = threading.Lock()
+
+client = None
+username = None
+
+# Used for reconnecting to new server
+def connect(addr, port):
+
+    global client
+
+    # Check if already have a client socket
+    with client_lock:
+        if client:
+            # First close the connection
+            try:
+                client.close()
+            except:
+                pass
+
+        # Now connect to new server
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect((addr, port))
+        print(f"Connected to {addr}:{port}")
+
+
 def receive():
 
+    global client, username
+
     while True:
+
         try:
             packet = client.recv(1024)
+
             if not packet:
                 print("Server closed the connection.")
                 break
 
-            # If the server literally says USER, send our username
+            # SERVER: handshake prompt?
             if packet == b'USER':
                 client.send(username.encode('ascii'))
-                
                 continue
 
-            # Otherwise, it's one of our structured packets
+            # Structured packet
             try:
-                read_packet = unpack_packet(packet)
-                # Avoid shadowing the global 'username' here:
-                sender   = read_packet['header']
-                body     = read_packet['body']
-                datetime = read_packet['date']
-                
-                print(f"[{datetime}] {sender}: {body}")
-                continue
+                p = unpack_packet(packet)
+                sender = p['header']
+                body   = p['body']
+                date     = p['date']
+                print(f"[{date}] {sender}: {body}")
+
+                # Auto hop on CHAT CREATED
+                if sender == "CHAT CREATED":
+                    # body == "<room> <host> <port>"
+                    room, host, port_s = body.split()
+                    port = int(port_s)
+                    print(f"> Hopping into new chat `{room}` @ {host}:{port}…")
+                    # Reconnect
+                    connect(host, port)
+                    # No immediate username send here yet,
+                    # now we'll wait for the b'USER' prompt.
+                    continue
 
             except Exception:
-                # If the packet isn't our custom structured struct.pack,
-                # then we'll fallback to plain-text control messages
-                try:
-                    notice = packet.decode('ascii').strip()
-                    if notice:
-                        print(notice)
-                    
-                    continue
-                
-                # Catch unknown binary blobs x)
-                except UnicodeDecodeError:
-                    continue
-                except Exception as e:
-                    print(f"Exception: {e}")
-
+                # fallback to plain-text
+                text = packet.decode('ascii', errors='ignore').strip()
+                if text:
+                    print(text)
+                continue
 
         except Exception as e:
-            print("Error in receive():", repr(e))
+            print("Error in receive():", e)
             break
+    # eo while true
 
-    client.close()
+    # if client:
+    #     client.close()
+    with client_lock:
+        client.close()
 
 
-# Sending Messages To Server
 def write():
+
+    global client
 
     while True:
 
         try:
-            msg = input('')
-            # Skip empty messages
+            msg = input()
+
             if not msg.strip():
                 continue
 
             packet = build_packet(username, msg)
-
-            try:
-                client.send(packet)
-            # This exception prevents the thing from exploding
-            except OSError as sock_err:
-                # EBADF (9) = Bad file descriptor, EPIPE (32) = Broken pipe
-                if sock_err.errno in (errno.EBADF, errno.EPIPE):
-                    print("Connection closed, writer exiting.")
-                    break
-                else:
-                    raise
+            client.send(packet)
 
         except KeyboardInterrupt:
 
             print("\n<KeyboardInterrupt> Shutting down.")
-            
 
             try:
                 client.shutdown(socket.SHUT_RDWR)
-            # This exception prevents the thing from exploding
-            except OSError:
+            except:
                 pass
+
             client.close()
             break
+
+        except OSError as sock_err:
+
+            if sock_err.errno in (errno.EBADF, errno.EPIPE):
+                print("Connection closed, writer exiting.")
+                break
+
+            else:
+                raise
 
         except Exception as e:
             print("Write error:", e)
             break
 
 
-if __name__ == '__main__':
-    # Start the listener and writer threads as daemons
-    receive_thread = threading.Thread(target=receive, daemon=True)
-    receive_thread.start()
 
-    write_thread = threading.Thread(target=write, daemon=True)
-    write_thread.start()
+if __name__ == "__main__":
 
-    # Keep the main thread alive until writer exits
-    write_thread.join()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Tracker Server address")
+    parser.add_argument('-H', '--host',  default='localhost')
+    parser.add_argument('-P', '--port',  type=int, default=8888)
+    args = parser.parse_args()
+
+    username = input("Choose your username: ").strip()
+    if not username:
+        print("Username cannot be empty.")
+        exit(1)
+
+    # Initial connect to tracker
+    connect(args.host, args.port)
+
+    threading.Thread(target=receive, daemon=True).start()
+    threading.Thread(target=write, daemon=True).start()
+    # Keep main alive
+    threading.Event().wait()

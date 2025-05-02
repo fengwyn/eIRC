@@ -85,9 +85,6 @@ class TrackerDaemon:
                 if not packet:
                     break
 
-                # parts = packet.decode('utf-8').strip().split()
-                # cmd = parts[0]
-
                 # Unpack packet
                 read_packet: dict() = unpack_packet(packet)
                 header, body, date = read_packet['header'], read_packet['body'], read_packet['date']
@@ -145,7 +142,7 @@ class TrackerDaemon:
                             conn.send(packet)
 
                         case "/list":
-                            pass
+
                             servers = self.tracker.get_server_list()
                             resp = "ACTIVE_SERVERS\n"
                             for sname, saddr in servers.items():
@@ -153,14 +150,14 @@ class TrackerDaemon:
 
                             packet = build_packet("/list", resp)
                             conn.send(packet)
-                            # conn.send(resp.encode('utf-8'))
+
 
                         case "join":
 
                             if len(parts) < 2:
                                 packet = build_packet("ERROR Usage", "/join <name>")
                                 conn.send(packet)
-                                # conn.send(b"ERROR Usage: /join <name>\n")
+
                                 continue
                         
                             name = args[0]
@@ -168,18 +165,18 @@ class TrackerDaemon:
                             
                             if name in servers:
                                 packet = build_packet("JOIN", f"{servers[name]}")
+                                print(f"JOIN: {servers[name]}")
                                 conn.send(packet)
-                                # conn.send(f"JOIN {servers[name]}\n".encode('utf-8'))
+
                             else:
                                 packet = build_packet("ERROR", "Server not found")
                                 conn.send(packet)
-                                # conn.send(b"ERROR Server not found\n")
-                                pass
+
 
                         case _:
                             packet = build_packet("ERROR", "Unknown command")
                             conn.send(packet)
-                            pass
+
 
                         # eof case
                     # eof switch
@@ -194,6 +191,7 @@ class TrackerDaemon:
 
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser(description="Tracker Server for chat rooms.")
     parser.add_argument('-H', '--host', default='localhost')
     parser.add_argument('-P', '--port', type=int, default=8888)
