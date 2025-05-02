@@ -13,7 +13,7 @@ username = input("Choose your username: ")
 
 # Connecting To Server
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(('localhost', 9000))
+client.connect(('localhost', 8888))
 
 
 # Listening to Server and Sending Username
