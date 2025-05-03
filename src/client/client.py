@@ -1,6 +1,7 @@
 # Run from project root:
 #   $ python -m src.client.client
 
+import argparse
 import socket
 import threading
 import errno    # UNIX error codes
@@ -60,17 +61,34 @@ def receive():
                 date     = p['date']
                 print(f"[{date}] {sender}: {body}")
 
-                # Auto hop on CHAT CREATED
-                if sender == "CHAT CREATED":
-                    # body == "<room> <host> <port>"
-                    room, host, port_s = body.split()
-                    port = int(port_s)
-                    print(f"> Hopping into new chat `{room}` @ {host}:{port}…")
-                    # Reconnect
-                    connect(host, port)
-                    # No immediate username send here yet,
-                    # now we'll wait for the b'USER' prompt.
-                    continue
+
+                match sender:
+
+                    # Auto hop on CHAT CREATED
+                    case "CHAT CREATED":
+                        # body == "<room> <host> <port>"
+                        room, host, port_s = body.split()
+                        port = int(port_s)
+                        print(f"Hopping into new chat `{room}` @ {host}:{port}…")
+                        # Reconnect
+                        connect(host, port)
+                        # No immediate username send here yet,
+                        # now we'll wait for the b'USER' prompt
+                        continue
+
+                    
+                    case "JOIN":
+
+                        ip, port = body.split(':')
+                        port = int(port)
+                        print(f"Joining chat server @{body}")
+                        connect(ip, port)
+
+                        pass
+
+                    case _:
+                        pass
+
 
             except Exception:
                 # fallback to plain-text
@@ -134,17 +152,17 @@ def write():
 
 if __name__ == "__main__":
 
-    import argparse
-
     parser = argparse.ArgumentParser(description="Tracker Server address")
     parser.add_argument('-H', '--host',  default='localhost')
     parser.add_argument('-P', '--port',  type=int, default=8888)
     args = parser.parse_args()
 
-    username = input("Choose your username: ").strip()
-    if not username:
-        print("Username cannot be empty.")
-        exit(1)
+    username = None
+
+    while username is None:
+        username = input("Choose your username: ").strip()
+        if not username:
+            print("Username cannot be empty.")
 
     # Initial connect to tracker
     connect(args.host, args.port)

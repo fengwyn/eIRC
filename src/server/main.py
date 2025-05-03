@@ -152,20 +152,20 @@ class TrackerDaemon:
                             conn.send(packet)
 
 
-                        case "join":
+                        case "/join":
 
-                            if len(parts) < 2:
+                            if len(args) < 1:
                                 packet = build_packet("ERROR Usage", "/join <name>")
                                 conn.send(packet)
-
                                 continue
                         
                             name = args[0]
-                            servers = self.tracker.get_server_list()
+                            servers = self.tracker.get_server_list()    # <- This is a dict()
                             
                             if name in servers:
+
                                 packet = build_packet("JOIN", f"{servers[name]}")
-                                print(f"JOIN: {servers[name]}")
+                                print(f"JOIN: {servers[name]} @ {servers[name]}")
                                 conn.send(packet)
 
                             else:
