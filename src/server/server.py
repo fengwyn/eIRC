@@ -69,7 +69,7 @@ class Server(threading.Thread):
                 header, body, date = read_packet['header'], read_packet['body'], read_packet['date']
 
                 # The start of a message/body starts with '/' if it's a command
-                if body[0] == '/':
+                if body.startswith('/'):
                     print(f"Command: {body}")
 
                 message = header + ': ' + body
