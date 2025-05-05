@@ -129,7 +129,7 @@ class ServerTracker(Tracker):
     
     # Adds a new chat server to the directory and grants initial administrative rights
 
-    # NOTE: server_address will contain IP:PORT
+    # NOTE: server_address will contain 'IP:PORT'
     def register_server(self, server_name: str, server_address: str,
                         admin_user: str, admin_address: str,
                         is_private: bool, passkey: str):

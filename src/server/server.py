@@ -57,6 +57,22 @@ class Server(threading.Thread):
     # Handling Messages From Clients
     def handle(self, client):
 
+
+        def handle_client_leave():
+
+                if client in self.clients:
+                    # Removing And Closing Clients
+                    index = self.clients.index(client)
+                    self.clients.remove(client)
+
+                    client.close()
+                    
+                    user = self.usernames[index]
+                    self.broadcast('{} left!'.format(user).encode('ascii'))
+                    self.usernames.remove(user)
+            # eo if
+        # eo def
+
         while True:
             
             try:
@@ -71,6 +87,19 @@ class Server(threading.Thread):
                 # The start of a message/body starts with '/' if it's a command
                 if body.startswith('/'):
                     print(f"Command: {body}")
+                    
+                    # Let's match the chat server commands
+                    match body:
+
+                        case "/leave":
+                            handle_client_leave()
+                            break
+                    
+                        case _:
+                            print(f"Unhandled command: {body}")
+
+                    # eo match
+                # eo if
 
                 message = header + ': ' + body
 
@@ -80,14 +109,18 @@ class Server(threading.Thread):
                 # Broadcast the message to everyone <sending the packet
                 self.broadcast(packet)
 
+
+            # Let's make the closing statement a function
             except:
-                # Removing And Closing Clients
-                index = self.clients.index(client)
-                self.clients.remove(client)
-                client.close()
-                user = self.usernames[index]
-                self.broadcast('{} left!'.format(user).encode('ascii'))
-                self.usernames.remove(user)
+
+                handle_client_leave()
+                # # Removing And Closing Clients
+                # index = self.clients.index(client)
+                # self.clients.remove(client)
+                # client.close()
+                # user = self.usernames[index]
+                # self.broadcast('{} left!'.format(user).encode('ascii'))
+                # self.usernames.remove(user)
                 break
 
 
@@ -139,6 +172,9 @@ class Server(threading.Thread):
 
         except Exception as e:
             logger.error(f"Error during server_start() excution: {e}")
+
+
+
 
 # Parameters:  ---hostname <address : Str> --port <port : int> --maxconns <max connections : int> --messagelength <message length: int>
 # Running:      $ python3.13 server.py --hostname localhost --port 8888 --maxconns 32 --messagelength 64

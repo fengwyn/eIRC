@@ -110,6 +110,7 @@ class TrackerDaemon:
                     
                     match command:
 
+                        # Create a chat room
                         case "/create":
 
                             if len(args) < 2:
@@ -141,6 +142,7 @@ class TrackerDaemon:
                             packet = build_packet("CHAT CREATED", f"{name} {self.host} {chat_port}")
                             conn.send(packet)
 
+                        # List active servers
                         case "/list":
 
                             servers = self.tracker.get_server_list()
@@ -151,7 +153,7 @@ class TrackerDaemon:
                             packet = build_packet("/list", resp)
                             conn.send(packet)
 
-
+                        # Join a chat room
                         case "/join":
 
                             if len(args) < 1:
@@ -163,7 +165,6 @@ class TrackerDaemon:
                             servers = self.tracker.get_server_list()    # <- This is a dict()
                             
                             if name in servers:
-
                                 packet = build_packet("JOIN", f"{servers[name]}")
                                 print(f"JOIN: {servers[name]} @ {servers[name]}")
                                 conn.send(packet)
@@ -172,7 +173,19 @@ class TrackerDaemon:
                                 packet = build_packet("ERROR", "Server not found")
                                 conn.send(packet)
 
+                        # Exit tracker
+                        case "/exit":
 
+                            packet = build_packet("EXIT", "Closing connection...")
+                            conn.send(packet)
+                            try:
+                                conn.close()
+                                break
+                            except Exception as e:
+                                print(f"\nFailed to close connection: {e}")
+
+
+                        # Handle everything else
                         case _:
                             packet = build_packet("ERROR", "Unknown command")
                             conn.send(packet)

@@ -15,6 +15,8 @@ client_lock = threading.Lock()
 client = None
 username = None
 
+
+
 # Used for reconnecting to new server
 def connect(addr, port):
 
@@ -33,6 +35,7 @@ def connect(addr, port):
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client.connect((addr, port))
         print(f"Connected to {addr}:{port}")
+
 
 
 def receive():
@@ -58,7 +61,7 @@ def receive():
                 p = unpack_packet(packet)
                 sender = p['header']
                 body   = p['body']
-                date     = p['date']
+                date   = p['date']
                 print(f"[{date}] {sender}: {body}")
 
 
@@ -84,7 +87,18 @@ def receive():
                         print(f"Joining chat server @{body}")
                         connect(ip, port)
 
-                        pass
+                    # NOTE: So far, this'll close the client write, but not receive
+                    # Since we still want to stay inside the eIRC interface,
+                    # we must simply destroy or freeze (whichever is implemented)
+                    # the Client Class object instance (and its thread)
+
+                    # If the user wants to reinitiate another connection, then the Client object
+                    # should once again be instantiated
+                    case "EXIT":
+                        print("Goodbye!")
+                        with client_lock:
+                            client.close()
+                        # Go back to interface mode
 
                     case _:
                         pass
@@ -119,6 +133,22 @@ def write():
 
             if not msg.strip():
                 continue
+
+
+            if msg.startswith('/'):
+                
+                match msg:
+
+                    case "/leave":
+                        pass
+
+                    case "/exit":
+                        packet = build_packet(username, msg)
+
+                    case _:
+                        print(f"Command : {msg} not handled...")
+                # eo match
+            # eo if
 
             packet = build_packet(username, msg)
             client.send(packet)
