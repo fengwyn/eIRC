@@ -11,7 +11,7 @@ import logging
 import argparse
 import time
 from ..utils.packet import build_packet, unpack_packet
-
+from ..utils.interface import get_commands
 
 # Global Logging Object
 logging.basicConfig(filename="log/server.log", format='%(asctime)s %(message)s', filemode='a')
@@ -40,6 +40,8 @@ class Server(threading.Thread):
         self.clients = []
         self.usernames = []
 
+        # Get available commands from interface module
+        self.commands = get_commands()
 
     # Sending Messages To All Connected Clients
     def broadcast(self, message):
@@ -57,11 +59,26 @@ class Server(threading.Thread):
     # Handling Messages From Clients
     def handle(self, client):
 
+
+        def handle_client_leave():
+
+                if client in self.clients:
+                    # Removing And Closing Clients
+                    index = self.clients.index(client)
+                    self.clients.remove(client)
+
+                    client.close()
+                    
+                    user = self.usernames[index]
+                    self.broadcast('{} left!'.format(user).encode('ascii'))
+                    self.usernames.remove(user)
+            # eo if
+        # eo def
+
         while True:
             
             try:
                 # Broadcasting Messages
-                # message = client.recv(1024)
                 packet = bytes(client.recv(1024))
 
                 # Unpack packet
@@ -70,7 +87,39 @@ class Server(threading.Thread):
 
                 # The start of a message/body starts with '/' if it's a command
                 if body.startswith('/'):
+                    
                     print(f"Command: {body}")
+                    
+                    body.strip()
+
+                    if len(body) < 2:
+                        continue                    
+
+                    if body not in self.commands:
+                        print(f"Invalid Command: {body}")
+                        continue
+
+
+                    # Let's match the chat server commands
+                    match body:
+
+                        case "/users":
+                            user_list = ", ".join(self.usernames)
+                            packet = build_packet("Users", user_list)
+                            client.send(packet)
+                            continue
+
+                        case "/leave":
+                            packet = build_packet("LEAVE", "Leaving chat room...")
+                            client.send(packet)
+                            handle_client_leave()
+                            return # Using return instead of break allows to drop out of handle() more seamlessly
+                    
+                        case _:
+                            print(f"Unhandled command: {body}")
+
+                    # eo match
+                # eo if
 
                 message = header + ': ' + body
 
@@ -80,14 +129,11 @@ class Server(threading.Thread):
                 # Broadcast the message to everyone <sending the packet
                 self.broadcast(packet)
 
+
+            # Let's make the closing statement a function
             except:
-                # Removing And Closing Clients
-                index = self.clients.index(client)
-                self.clients.remove(client)
-                client.close()
-                user = self.usernames[index]
-                self.broadcast('{} left!'.format(user).encode('ascii'))
-                self.usernames.remove(user)
+
+                handle_client_leave()
                 break
 
 
@@ -139,6 +185,9 @@ class Server(threading.Thread):
 
         except Exception as e:
             logger.error(f"Error during server_start() excution: {e}")
+
+
+
 
 # Parameters:  ---hostname <address : Str> --port <port : int> --maxconns <max connections : int> --messagelength <message length: int>
 # Running:      $ python3.13 server.py --hostname localhost --port 8888 --maxconns 32 --messagelength 64

@@ -13,10 +13,14 @@ from pathlib import Path
 
 
 # Implemented IRC Commands (useful if desired parsing by array)
-commands = {"/sh", "/esh", "/servers", "/users", "/current", "/whisper", 
+def get_commands():
+    
+    commands = {"/sh", "/esh", "/servers", "/users", "/current", "/whisper", 
             "/join", "/accept", "/reject", "/leave", "/delete", 
             "/accept", "/reject", "/sendfile", "/receivefile", 
             "/off", "/commands"}
+
+    return commands
 
 # Global Text Section
 def get_command_text() -> str:
@@ -45,28 +49,6 @@ def get_command_text() -> str:
 def print_commands():
 
     print(get_command_text())
-
-    # print("\nWelcome to the eIRC Shell!")
-    # print("Type:")
-    # print("\t/sh: to enter shell mode and exit IRC mode.")
-    # print("\t/esh: to exit shell mode and enter into IRC mode.")
-    # print("\t/servers: to list active servers you're in.")
-    # print("\t/users: to list active users in your friends list.")
-    # print("\t/current: prints current channel.")
-    # print("\t/whisper <user>: to send direct message to user.")
-    # print("\t/join <server> <key>: to join private server.")
-    # print("\t/accept <server>: to accept server invitation.")
-    # print("\t/reject <server>: to reject server invitation.")
-    # print("\t/leave <server>: to leave server.")
-    # print("\t/delete <user>: to delete user from friends list.")
-    # print("\t/accept <user>: to accept user friend request.")
-    # print("\t/reject <user>: to reject user friend request.")
-    # print("\t/sendfile filepath <user>: to send file to user -- End user must accept sendfile request.")
-    # print("\t/receivefile <user>: to accept file request from user.")
-    # print("\t/off: to close IRC client.")
-    # print("\t/commands: to list all eIRC commands.")
-    # print("\nEnjoy.")
-
 
 # Interface, can swap between IRC and Shell mode
 def interface():
@@ -194,3 +176,38 @@ def interface():
 if __name__ == "__main__":
 
     interface()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # print("\nWelcome to the eIRC Shell!")
+    # print("Type:")
+    # print("\t/sh: to enter shell mode and exit IRC mode.")
+    # print("\t/esh: to exit shell mode and enter into IRC mode.")
+    # print("\t/servers: to list active servers you're in.")
+    # print("\t/users: to list active users in your friends list.")
+    # print("\t/current: prints current channel.")
+    # print("\t/whisper <user>: to send direct message to user.")
+    # print("\t/join <server> <key>: to join private server.")
+    # print("\t/accept <server>: to accept server invitation.")
+    # print("\t/reject <server>: to reject server invitation.")
+    # print("\t/leave <server>: to leave server.")
+    # print("\t/delete <user>: to delete user from friends list.")
+    # print("\t/accept <user>: to accept user friend request.")
+    # print("\t/reject <user>: to reject user friend request.")
+    # print("\t/sendfile filepath <user>: to send file to user -- End user must accept sendfile request.")
+    # print("\t/receivefile <user>: to accept file request from user.")
+    # print("\t/off: to close IRC client.")
+    # print("\t/commands: to list all eIRC commands.")
+    # print("\nEnjoy.")

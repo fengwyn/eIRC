@@ -15,6 +15,9 @@ client_lock = threading.Lock()
 client = None
 username = None
 
+tracker_addr = None
+tracker_port = None
+
 # Used for reconnecting to new server
 def connect(addr, port):
 
@@ -35,9 +38,12 @@ def connect(addr, port):
         print(f"Connected to {addr}:{port}")
 
 
+
 def receive():
 
     global client, username
+    # Used for reconnecting to tracker after leaving a chat room
+    global tracker_addr, tracker_port
 
     while True:
 
@@ -58,7 +64,7 @@ def receive():
                 p = unpack_packet(packet)
                 sender = p['header']
                 body   = p['body']
-                date     = p['date']
+                date   = p['date']
                 print(f"[{date}] {sender}: {body}")
 
 
@@ -84,7 +90,25 @@ def receive():
                         print(f"Joining chat server @{body}")
                         connect(ip, port)
 
-                        pass
+                    # NOTE: LEAVE is when leaving a chat room, which hops back into a tracker
+                    # EXIT is for leaving the tracker and ultimately the master server
+                    case "LEAVE":
+                        print("Leaving chat room...\nRedirecting to known tracker(s).")
+                        connect(tracker_addr, tracker_port)
+                    
+                    # NOTE: So far, this'll close the client write, but not receive
+                    # Since we still want to stay inside the eIRC interface,
+                    # we must simply destroy or freeze (whichever is implemented)
+                    # the Client Class object instance (and its thread)
+
+                    # If the user wants to reinitiate another connection, then the Client object
+                    # should once again be instantiated
+                    case "EXIT":
+                        print("Goodbye!")
+                        with client_lock:
+                            client.close()
+                        # Go back to interface mode
+
 
                     case _:
                         pass
@@ -119,6 +143,23 @@ def write():
 
             if not msg.strip():
                 continue
+
+
+            # Some commands must be handled by special cases, such as exit and file sending
+            # if msg.startswith('/'):
+                
+            #     match msg:
+
+            #         case "/leave":
+            #             pass
+
+            #         case "/exit":
+            #             packet = build_packet(username, msg)
+
+            #         case _:
+            #             print(f"Command : {msg} not handled...")
+                # eo match
+            # eo if
 
             packet = build_packet(username, msg)
             client.send(packet)
@@ -158,6 +199,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     username = None
+    # We must have a living initiated instance of the tracker address such as to hop back during LEAVE
+    tracker_addr = args.host
+    tracker_port = args.port
 
     while username is None:
         username = input("Choose your username: ").strip()
