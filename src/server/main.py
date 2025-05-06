@@ -130,6 +130,7 @@ class TrackerDaemon:
 
                             # register in tracker
                             admin_address = f"{addr[0]}:{addr[1]}"
+                            
                             self.tracker.register_server(
                                 name,
                                 f"{self.host}:{chat_port}",
@@ -143,14 +144,14 @@ class TrackerDaemon:
                             conn.send(packet)
 
                         # List active servers
-                        case "/list":
+                        case "/servers":
 
                             servers = self.tracker.get_server_list()
                             resp = "ACTIVE_SERVERS\n"
                             for sname, saddr in servers.items():
                                 resp += f"{sname} @ {saddr}\n"
 
-                            packet = build_packet("/list", resp)
+                            packet = build_packet("/servers", resp)
                             conn.send(packet)
 
                         # Join a chat room

@@ -13,10 +13,14 @@ from pathlib import Path
 
 
 # Implemented IRC Commands (useful if desired parsing by array)
-commands = {"/sh", "/esh", "/servers", "/users", "/current", "/whisper", 
+def get_commands():
+    
+    commands = {"/sh", "/esh", "/servers", "/users", "/current", "/whisper", 
             "/join", "/accept", "/reject", "/leave", "/delete", 
             "/accept", "/reject", "/sendfile", "/receivefile", 
             "/off", "/commands"}
+
+    return commands
 
 # Global Text Section
 def get_command_text() -> str:
