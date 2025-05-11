@@ -161,9 +161,9 @@ class ChatTracker(Tracker):
         self.remove_member(user)
 
     # Returns all active users
-    def list_active_users(self) -> dict: 
+    def get_active_users_list(self) -> dict: 
         return self.list_members()
 
     # Returns current chat administrators
-    def list_admins(self) -> dict:
+    def get_admin_list(self) -> dict:
         return super().list_admins()

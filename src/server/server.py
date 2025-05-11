@@ -12,6 +12,7 @@ import argparse
 import time
 from ..utils.packet import build_packet, unpack_packet
 from ..utils.interface import get_commands
+from ..utils.tracker import ChatTracker
 
 # Global Logging Object
 logging.basicConfig(filename="log/server.log", format='%(asctime)s %(message)s', filemode='a')
@@ -21,7 +22,8 @@ logger = logging.getLogger()
 # The connection will be TCP to ensure quality file wr/rd and content integrity
 class Server(threading.Thread):
 
-    def __init__(self, hostname, port, MAXIMUM_CONNECTIONS, MESSAGE_LENGTH):
+    def __init__(self, hostname, port, MAXIMUM_CONNECTIONS, MESSAGE_LENGTH, 
+                servername, creatorname, creatoraddr, isPrivate, passkey):
 
         # Server Address
         self.hostname = hostname
@@ -43,6 +45,10 @@ class Server(threading.Thread):
         # Get available commands from interface module
         self.commands = get_commands()
 
+        # Initiate Chat Tracker module
+        self.tracker = ChatTracker(servername, "{hostname}:{port}", creatorname, creatoraddr, isPrivate, passkey)
+
+
     # Sending Messages To All Connected Clients
     def broadcast(self, message):
 
@@ -59,7 +65,6 @@ class Server(threading.Thread):
     # Handling Messages From Clients
     def handle(self, client):
 
-
         def handle_client_leave():
 
                 if client in self.clients:
@@ -72,6 +77,8 @@ class Server(threading.Thread):
                     user = self.usernames[index]
                     self.broadcast('{} left!'.format(user).encode('ascii'))
                     self.usernames.remove(user)
+                    # Remove from tracker
+                    self.tracker.user_leave(user)
             # eo if
         # eo def
 
@@ -115,9 +122,15 @@ class Server(threading.Thread):
                             handle_client_leave()
                             return # Using return instead of break allows to drop out of handle() more seamlessly
                     
+                        case "/current":
+                            curr_srv_name = self.tracker.get_name()
+                            packet = build_packet("Currently in:", curr_srv_name)
+                            client.send(packet)
+                            continue
+
                         case _:
                             print(f"Unhandled command: {body}")
-
+                            continue
                     # eo match
                 # eo if
 
@@ -153,6 +166,9 @@ class Server(threading.Thread):
                 user = client.recv(1024).decode('ascii')
                 self.usernames.append(user)
                 self.clients.append(client)
+
+                # Register user to Chat Tracker
+                self.tracker.add_member(user, client)
 
                 # Print And Broadcast Username
                 print("Username is {}".format(user))

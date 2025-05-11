@@ -113,31 +113,46 @@ class TrackerDaemon:
                         # Create a chat room
                         case "/create":
 
-                            if len(args) < 2:
-                                packet = build_packet("ERROR Usage", "/create <name> <admin_user>")
+                            if len(args) < 3:
+                                packet = build_packet('''Incorrect Usage: Servername in <name>,              
+                                Your (or default) username for administrator's username in <admin_user>,
+                                If the server will be private input 1, else 0 in <private>,
+                                If private input passkey in <passkey>''', 
+
+                                "/create <name> <admin_user> <private> <passkey>")
+
                                 conn.send(packet)
                                 continue
                             
                             name = args[0]
                             admin_user = args[1]
+                            isPrivate = args[2]
+                            passkey = ""
+
+                            if isPrivate == "1":
+                                isPrivate = True
+                                passkey = args[3]
+                            else:
+                                isPrivate = False
 
                             # allocate a port for new chat server
                             chat_port = self.allocator.allocate()
 
                             # start chat server instance
-                            chat_srv = ChatRoomServer(self.host, chat_port, self.max_conns, self.msg_length)
-                            threading.Thread(target=chat_srv.server_start, daemon=True).start()
-
                             # register in tracker
                             admin_address = f"{addr[0]}:{addr[1]}"
+                            chat_srv = ChatRoomServer(self.host, chat_port, self.max_conns, self.msg_length, 
+                                                    name, admin_user, admin_address, isPrivate, passkey)
                             
+                            threading.Thread(target=chat_srv.server_start, daemon=True).start()
+
                             self.tracker.register_server(
                                 name,
                                 f"{self.host}:{chat_port}",
                                 admin_user=admin_user,
                                 admin_address=admin_address,
-                                is_private=False,
-                                passkey=""
+                                is_private=isPrivate,
+                                passkey=passkey
                             )
 
                             packet = build_packet("CHAT CREATED", f"{name} {self.host} {chat_port}")
