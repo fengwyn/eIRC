@@ -82,13 +82,20 @@ def receive():
                         # now we'll wait for the b'USER' prompt
                         continue
 
-                    
+
+                    case "WHISPER":
+                        # Whisper messages are already formatted in the body
+                        print(f"\n[WHISPER] {body}\n")
+                        continue
+
+
                     case "JOIN":
 
                         ip, port = body.split(':')
                         port = int(port)
                         print(f"Joining chat server @{body}")
                         connect(ip, port)
+
 
                     # NOTE: LEAVE is when leaving a chat room, which hops back into a tracker
                     # EXIT is for leaving the tracker and ultimately the master server
@@ -110,7 +117,9 @@ def receive():
                         # Go back to interface mode
 
 
+                    # NOTE: Literally all other packets are passed through here
                     case _:
+                        # print("Handling unknown packet...")
                         pass
 
 

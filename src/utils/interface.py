@@ -17,7 +17,7 @@ def get_commands():
     
     commands = {"/sh", "/esh", "/servers", "/users", "/current", "/whisper", 
             "/join", "/accept", "/reject", "/leave", "/delete", 
-            "/reject", "/sendfile", "/receivefile", 
+            "/reject", "/sendfile", "/receivefile", "/exit",
             "/off", "/commands"}
 
     return commands
@@ -25,23 +25,35 @@ def get_commands():
 # Global Text Section
 def get_command_text() -> str:
     
-    command_text = '''/sh: to enter shell mode and exit IRC mode.
+    command_text = '''\t--- eIRC Commands ---
+
+        /sh: to enter shell mode and exit IRC mode.
         /esh: to exit shell mode and enter into IRC mode.
+        /commands: to list all eIRC commands.
+
         /servers: to list active servers you're in.
-        /users: to list active users in your friends list.
-        /current: prints current channel.
-        /whisper <user>: to send direct message to user.
         /join <server> <key>: to join private server.
         /accept <server>: to accept server invitation.
         /reject <server>: to reject server invitation.
-        /leave <server>: to leave server.
-        /delete <user>: to delete user from friends list.
+        
         /accept <user>: to accept user friend request.
         /reject <user>: to reject user friend request.
-        /sendfile filepath <user>: to send file to user -- End user must accept sendfile request.
-        /receivefile <user>: to accept file request from user.
+        /delete <user>: to delete user from friends list.
+
+        /exit: to exit IRC Tracker Server.
         /off: to close IRC client.
-        /commands: to list all eIRC commands.'''
+
+        \t--- Chat Room Commands ---
+
+        /current: prints current channel.
+        /users: to list active users in your friends list.
+        /leave <server>: to leave server.
+
+        /whisper <user>: to send direct message to user.
+        /sendfile filepath <user>: to send file to user -- End user must accept sendfile request.
+            /receivefile <user>: to accept file request from user.
+
+'''
 
     return command_text
 
