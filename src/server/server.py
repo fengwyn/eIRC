@@ -13,6 +13,7 @@ import time
 from ..utils.packet import build_packet, unpack_packet
 from ..utils.interface import get_commands
 from ..utils.tracker import ChatTracker
+from .chat_commands import CommandHandler
 
 # Global Logging Object
 logging.basicConfig(filename="log/server.log", format='%(asctime)s %(message)s', filemode='a')
@@ -82,8 +83,10 @@ class Server(threading.Thread):
             # eo if
         # eo def
 
+        # Initialize command handler
+        command_handler = CommandHandler(self.tracker, self.usernames)
+
         while True:
-            
             try:
                 # Broadcasting Messages
                 packet = bytes(client.recv(1024))
@@ -97,49 +100,69 @@ class Server(threading.Thread):
                     
                     print(f"Command: {body}")
                     
-                    body.strip()
-
                     if len(body) < 2:
-                        continue                    
-
-                    if body not in self.commands:
-                        print(f"Invalid Command: {body}")
                         continue
 
+                    # Get just the base command without arguments
+                    base_command = body.split()[0]
+                    if base_command not in self.commands:
+                        print(f"Invalid Command: {base_command}")
+                        continue
 
-                    # Let's match the chat server commands
-                    match body:
+                    # Handle the command inside chat_commands.py
+                    # NOTE: Not all commands can be handled here,
+                    # commands which rely on server-side logic must be handled in server.py
+                    response_packet = command_handler.handle_command(body)
 
-                        case "/users":
-                            user_list = ", ".join(self.usernames)
-                            packet = build_packet("Users", user_list)
-                            client.send(packet)
-                            continue
+                    if response_packet:
 
-                        case "/leave":
-                            packet = build_packet("LEAVE", "Leaving chat room...")
-                            client.send(packet)
-                            handle_client_leave()
-                            return # Using return instead of break allows to drop out of handle() more seamlessly
-                    
-                        case "/current":
-                            curr_srv_name = self.tracker.get_name()
-                            packet = build_packet("Currently in:", curr_srv_name)
-                            client.send(packet)
-                            continue
+                        # We'll use a case statement to handle the different commands
+                        match body.split()[0]:  # Get just the base command
 
-                        case _:
-                            print(f"Unhandled command: {body}")
-                            continue
-                    # eo match
-                # eo if
+                            case '/whisper':
+                                # Unpack the whisper packet
+                                whisper_packet = unpack_packet(response_packet)
+
+                                if whisper_packet['header'] == 'WHISPER':
+
+                                    # Split target user and message
+                                    target_user, message = whisper_packet['body'].split('|', 1)
+
+                                    # Find the target client
+                                    target_index = self.usernames.index(target_user)
+                                    target_client = self.clients[target_index]
+                                    
+                                    # Send whisper to target user
+                                    whisper_msg = f"Whisper from {header}: {message}"
+                                    target_client.send(build_packet("WHISPER", whisper_msg))
+                                    
+                                    # Send confirmation to sender
+                                    client.send(build_packet("WHISPER", f"Whisper sent to {target_user}"))
+
+                                else:
+                                    # Send error message to sender
+                                    client.send(response_packet)
+
+                            # Handle with nested function
+                            case '/leave':
+                                # Use the response packet from CommandHandler
+                                client.send(response_packet)
+                                handle_client_leave()
+                                return
+
+                            # Default case
+                            case _:
+                                client.send(response_packet)
+                            
+                        # No response packet ? cool continue
+                        continue
 
                 message = header + ': ' + body
 
                 # print(message.decode('utf-8'))
                 print(message)
 
-                # Broadcast the message to everyone <sending the packet
+                # If not command, broadcast the message to everyone <sending the packet
                 self.broadcast(packet)
 
 

@@ -116,6 +116,8 @@ class Tracker(threading.Thread):
     def get_address(self) -> str:
         return self.address
 
+
+
 # Inhereted Class <Tracker> - Tracker Server keeps a directory of active chat servers
 # When a user creates a server, it should redirect them automatically to the server 
 # as well as register them as an administrator ---- This will be done on server/main.py (?)
@@ -125,6 +127,8 @@ class ServerTracker(Tracker):
                  creator_user: str, creator_address: str,
                  is_private: bool, passkey: str):
         super().__init__(name, address, creator_user, creator_address, is_private, passkey)
+        # Add a dictionary to store server metadata
+        self.server_metadata = {}
 
     
     # Adds a new chat server to the directory and grants initial administrative rights
@@ -136,6 +140,13 @@ class ServerTracker(Tracker):
 
         full_id = f"{server_name}"  # could be extended with address (?)
         self.add_member(full_id, server_address)
+        # Store server metadata
+        self.server_metadata[server_name] = {
+            'is_private': is_private,
+            'passkey': passkey,
+            'admin_user': admin_user,
+            'admin_address': admin_address
+        }
         logging.info(f"Registered chat server {server_name}@{server_address}")
         # Or we could track server-specific admin
         # Maybe use a nested Tracker per server if needed (?)
@@ -143,6 +154,15 @@ class ServerTracker(Tracker):
     # Returns all registered chat servers
     def get_server_list(self) -> dict:
         return self.list_members()
+
+    # Returns server metadata including privacy settings
+    def get_server_info(self, server_name: str) -> dict:
+        with self.lock:
+            if server_name in self.server_metadata:
+                return self.server_metadata[server_name]
+            return None
+
+
 
 # Inhereted Class <Tracker> - Chat Tracker for tracking active users on a chat server
 class ChatTracker(Tracker):

@@ -115,21 +115,29 @@ class TrackerDaemon:
 
                             if len(args) < 3:
                                 packet = build_packet('''Incorrect Usage: Servername in <name>,              
-                                Your (or default) username for administrator's username in <admin_user>,
-                                If the server will be private input 1, else 0 in <private>,
-                                If private input passkey in <passkey>''', 
+                    Your (or default) username for administrator's username in <admin_user>,
+                    If the server will be private input 1, else 0 in <private>,
+                    If private input passkey in <passkey>''', 
 
-                                "/create <name> <admin_user> <private> <passkey>")
+                    "\n/create <name> <admin_user> <private> <passkey>")
 
                                 conn.send(packet)
                                 continue
                             
                             name = args[0]
+                            
+                            # Check if a server name is already in use
+                            existing_servers = self.tracker.get_server_list()
+                            if name in existing_servers:
+                                packet = build_packet("ERROR", f"Server name '{name}' is already taken. Choose a different name.")
+                                conn.send(packet)
+                                continue
+
                             admin_user = args[1]
                             isPrivate = args[2]
                             passkey = ""
 
-                            if isPrivate == "1":
+                            if isPrivate == "1" or isPrivate == "true":
                                 isPrivate = True
                                 passkey = args[3]
                             else:
@@ -173,7 +181,7 @@ class TrackerDaemon:
                         case "/join":
 
                             if len(args) < 1:
-                                packet = build_packet("ERROR Usage", "/join <name>")
+                                packet = build_packet("ERROR Usage", "/join <name> [passkey]")
                                 conn.send(packet)
                                 continue
                         
@@ -181,6 +189,22 @@ class TrackerDaemon:
                             servers = self.tracker.get_server_list()    # <- This is a dict()
                             
                             if name in servers:
+                                # Get server info from tracker to check if it's private
+                                server_info = self.tracker.get_server_info(name)
+                                
+                                if server_info['is_private']:
+                                    # Check if passkey was provided
+                                    if len(args) < 2:
+                                        packet = build_packet("ERROR", f"Server '{name}' is private. Please provide a passkey: /join {name} <passkey>")
+                                        conn.send(packet)
+                                        continue
+                                    
+                                    # Verify passkey
+                                    if args[1] != server_info['passkey']:
+                                        packet = build_packet("ERROR", "Incorrect passkey")
+                                        conn.send(packet)
+                                        continue
+
                                 packet = build_packet("JOIN", f"{servers[name]}")
                                 print(f"JOIN: {servers[name]} @ {servers[name]}")
                                 conn.send(packet)

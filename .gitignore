@@ -1,5 +1,7 @@
 # Ignore build directory
 build/
+# Ignore debug logs
+log/
 
 # Ignore editor configs
 .vscode
