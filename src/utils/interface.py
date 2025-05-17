@@ -15,7 +15,7 @@ from pathlib import Path
 # Implemented IRC Commands (useful if desired parsing by array)
 def get_commands():
     
-    commands = {"/sh", "/esh", "/servers", "/users", "/current", "/whisper", 
+    commands = {"/sh", "/irc", "/servers", "/users", "/current", "/whisper", 
             "/join", "/accept", "/reject", "/leave", "/delete", 
             "/reject", "/sendfile", "/receivefile", "/exit",
             "/off", "/commands"}
@@ -27,31 +27,31 @@ def get_command_text() -> str:
     
     command_text = '''\t--- eIRC Commands ---
 
-        /sh: to enter shell mode and exit IRC mode.
-        /esh: to exit shell mode and enter into IRC mode.
-        /commands: to list all eIRC commands.
+        /sh: Enter shell mode and exit IRC mode.
+        /irc: Exit shell mode and enter into IRC mode.
+        /commands: List all eIRC commands.
 
-        /servers: to list active servers you're in.
-        /join <server> <key>: to join private server.
-        /accept <server>: to accept server invitation.
-        /reject <server>: to reject server invitation.
+        /servers: List active servers you're in.
+        /join <server> <key>: Join private server.
+        /accept <server>: Accept server invitation.
+        /reject <server>: Reject server invitation.
         
-        /accept <user>: to accept user friend request.
-        /reject <user>: to reject user friend request.
-        /delete <user>: to delete user from friends list.
+        /accept <user>: Accept user friend request.
+        /reject <user>: Reject user friend request.
+        /delete <user>: Delete user from friends list.
 
-        /exit: to exit IRC Tracker Server.
-        /off: to close IRC client.
+        /exit: Exit IRC Tracker Server.
+        /off: Close IRC client.
 
         \t--- Chat Room Commands ---
 
-        /current: prints current channel.
-        /users: to list active users in your friends list.
-        /leave <server>: to leave server.
+        /current: Print current channel.
+        /users: List active users in your friends list.
+        /leave <server>: Leave server.
 
-        /whisper <user>: to send direct message to user.
-        /sendfile filepath <user>: to send file to user -- End user must accept sendfile request.
-            /receivefile <user>: to accept file request from user.
+        /whisper <user>: Send direct message to user.
+        /sendfile filepath <user>: Send file to user -- End user must accept sendfile request.
+        /receivefile <user>: Accept file request from user.
 
 '''
 
@@ -81,10 +81,6 @@ def interface():
                 try:
                     current_path = Path(os.getcwd())
                     print(f"[{current_path}]$ ", end="")
-                    # current_path_split = str(current_path).split('/')
-                    # cur_path_size = len(current_path_split)
-                    # cur_path = current_path_split[:]
-                    # print(f"Path splits: {current_path_split} ")
 
                 except Exception as e:
                     print(f"Error getting current directory: {e}")
@@ -160,6 +156,7 @@ def interface():
                         print(f"Command error: {e}")
             
             # Handle IRC commands
+            # NOTE: This'll probably be obsolete given that client/client.py handles this now
             else:
                 # Use match-case (switch) for mass conditional handling
                 match input_command:

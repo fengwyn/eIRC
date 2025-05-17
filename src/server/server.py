@@ -136,8 +136,9 @@ class Server(threading.Thread):
                                     whisper_msg = f"Whisper from {header}: {message}"
                                     target_client.send(build_packet("WHISPER", whisper_msg))
                                     
+                                    # NOTE: Only for debugging purposes, we'll remove this later
                                     # Send confirmation to sender
-                                    client.send(build_packet("WHISPER", f"Whisper sent to {target_user}"))
+                                    # client.send(build_packet("WHISPER", f"Whisper sent to {target_user}"))
 
                                 else:
                                     # Send error message to sender

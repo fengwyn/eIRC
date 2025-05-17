@@ -1,5 +1,5 @@
 from ..utils.packet import build_packet
-
+# NOTE: Provides server-sided functionalities!!!
 
 
 # Command Handler will allow server chat rooms to handle commands externally,
@@ -60,8 +60,8 @@ class CommandHandler:
     # Handle /current command
     def handle_current(self) -> bytes:
 
-        curr_srv_name = self.tracker.get_name()
-        return build_packet("Currently in:", curr_srv_name)
+        cur_srv_name = self.tracker.get_name()
+        return build_packet("Currently in:", cur_srv_name)
 
 
     # Handle /whisper command
