@@ -235,10 +235,17 @@ if __name__ == "__main__":
 
     # Parse command line arguments
     parser = argparse.ArgumentParser(prog="server.py", description="Chat Room Server")
-    parser.add_argument('-n', '--hostname', type=str, default='localhost', help="Hostname for the Server")
-    parser.add_argument('-p', '--port', type=int, default=8888, help="Port number for Server")
+    parser.add_argument('-H', '--hostname', type=str, default='localhost', help="Hostname for the Server")
+    parser.add_argument('-P', '--port', type=int, default=8888, help="Port number for Server")
+
     parser.add_argument('-m', '--maxconns', type=int, default=32, help="Maximum Server connections from clients")
     parser.add_argument('-l', '--messagelength', type=int, default=128, help="Message length")
+
+    parser.add_argument('-n', '--servername', type=str, default='', help="Server name")
+    parser.add_argument('-c', '--creatorname', type=str, default='', help="Creator name")
+    parser.add_argument('-a', '--creatoraddr', type=str, default='', help="Creator address")
+    parser.add_argument('-i', '--isPrivate', type=int, default=0, help="Is the server private?")
+    parser.add_argument('-p', '--passkey', type=str, default='', help="Passkey")
 
     args = parser.parse_args()
     hostname = args.hostname
@@ -246,10 +253,18 @@ if __name__ == "__main__":
     maximum_connections = args.maxconns
     message_length = args.messagelength
 
+    servername = args.servername
+    creatorname = args.creatorname
+    creatoraddr = args.creatoraddr
+    isPrivate = args.isPrivate
+    passkey = args.passkey
+
     print(f"Host Server running at {socket.gethostbyname(hostname)}")
 
     print(f"Hostname: {hostname}, listening on port: {port}\
         \nMaximum connections {maximum_connections}, message length: {message_length}")
 
-    server = Server(hostname, port, maximum_connections, message_length)
+    server = Server(hostname, port, maximum_connections, message_length, 
+                    servername, creatorname, creatoraddr, isPrivate, passkey)
+
     server.server_start()

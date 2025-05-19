@@ -108,6 +108,10 @@ class TrackerDaemon:
 
                     # Utilize switch-case for handling all commands, or integrate via proper function/module
                     
+
+                    # NOTE: /create and /register have very similar functionality,
+                    #       we should refactor this to reduce code duplication (in the future)
+                    #       (Look at START and END block comments)
                     match command:
 
                         # Create a chat room
@@ -133,15 +137,19 @@ class TrackerDaemon:
                                 conn.send(packet)
                                 continue
 
+                            # <START> This small block
                             admin_user = args[1]
                             isPrivate = args[2]
                             passkey = ""
 
+                            # Check if server is private
                             if isPrivate == "1" or isPrivate == "true":
                                 isPrivate = True
                                 passkey = args[3]
                             else:
                                 isPrivate = False
+                            # <END> This small block
+
 
                             # allocate a port for new chat server
                             chat_port = self.allocator.allocate()
@@ -166,6 +174,7 @@ class TrackerDaemon:
                             packet = build_packet("CHAT CREATED", f"{name} {self.host} {chat_port}")
                             conn.send(packet)
 
+                       
                         # List active servers
                         case "/servers":
 
@@ -176,6 +185,7 @@ class TrackerDaemon:
 
                             packet = build_packet("/servers", resp)
                             conn.send(packet)
+
 
                         # Join a chat room
                         case "/join":
@@ -212,6 +222,50 @@ class TrackerDaemon:
                             else:
                                 packet = build_packet("ERROR", "Server not found")
                                 conn.send(packet)
+
+
+                        # Register a remote server
+                        case "/register":
+
+                            if len(args) < 4:
+                                packet = build_packet("ERROR", "Usage: /register <server name> <address> <admin> <is_private> <passkey>")
+                                conn.send(packet)
+                                continue
+
+                            server_name = args[0]
+
+                            # Check if server is already registered
+                            if server_name in self.tracker.get_server_list():
+                                packet = build_packet("ERROR", "Server already registered")
+                                conn.send(packet)
+                                continue
+
+                            # Get server address
+                            server_address = args[1]
+                            # Get admin address
+                            admin_address = f"{addr[0]}:{addr[1]}"
+                            # Get admin user
+                            admin_user = args[2]
+                            passkey = ""
+
+                            # <START> This small block
+                            # Check if server is private
+                            is_private = args[3]
+                            if is_private == "1" or is_private == "true":
+                                is_private = True
+                                passkey = args[4]
+                            else:
+                                is_private = False
+
+                            # Register server in tracker
+                            self.tracker.register_server(server_name, server_address, 
+                                                        admin_user, admin_address, 
+                                                        is_private, passkey)
+                            # <END> This small block
+
+                            packet = build_packet("REGISTERED", f"{server_name} {server_address} {admin_user} {admin_address} {is_private} {passkey}")
+                            conn.send(packet)
+
 
                         # Exit tracker
                         case "/exit":

@@ -33,9 +33,13 @@ def get_command_text() -> str:
 
         /servers: List active servers you're in.
         /join <server> <key>: Join private server.
+
+        /create <server>: Create a new server.
+        /register <server>: Register a remote server.
+
         /accept <server>: Accept server invitation.
         /reject <server>: Reject server invitation.
-        
+
         /accept <user>: Accept user friend request.
         /reject <user>: Reject user friend request.
         /delete <user>: Delete user from friends list.
@@ -61,6 +65,13 @@ def get_command_text() -> str:
 def print_commands():
 
     print(get_command_text())
+
+
+
+
+# NOTE: Here, turn the interface into a class below
+# class Interface:
+#     ...
 
 # Interface, can swap between IRC and Shell mode
 def interface():
