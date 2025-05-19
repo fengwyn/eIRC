@@ -138,7 +138,7 @@ class Server(threading.Thread):
                                     
                                     # NOTE: Only for debugging purposes, we'll remove this later
                                     # Send confirmation to sender
-                                    # client.send(build_packet("WHISPER", f"Whisper sent to {target_user}"))
+                                    client.send(build_packet("WHISPER", f"Whisper sent to {target_user}"))
 
                                 else:
                                     # Send error message to sender
@@ -266,7 +266,11 @@ if __name__ == "__main__":
         \nServer name: {servername}, creator name: {creatorname}, creator address: {creatoraddr} \
         \nIs private: {isPrivate}, passkey: {passkey}")
 
-    server = Server(hostname, port, maximum_connections, message_length, 
-                    servername, creatorname, creatoraddr, isPrivate, passkey)
+    try:
+        server = Server(hostname, port, maximum_connections, message_length, 
+                        servername, creatorname, creatoraddr, isPrivate, passkey)
 
-    server.server_start()
+        server.server_start()
+
+    except Exception as e:
+        logger.error(f"Error during server_start() excution: {e}")
