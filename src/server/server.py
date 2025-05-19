@@ -262,7 +262,9 @@ if __name__ == "__main__":
     print(f"Host Server running at {socket.gethostbyname(hostname)}")
 
     print(f"Hostname: {hostname}, listening on port: {port}\
-        \nMaximum connections {maximum_connections}, message length: {message_length}")
+        \nMaximum connections {maximum_connections}, message length: {message_length} \
+        \nServer name: {servername}, creator name: {creatorname}, creator address: {creatoraddr} \
+        \nIs private: {isPrivate}, passkey: {passkey}")
 
     server = Server(hostname, port, maximum_connections, message_length, 
                     servername, creatorname, creatoraddr, isPrivate, passkey)
