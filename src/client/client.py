@@ -6,11 +6,13 @@ import socket
 import threading
 import errno    # UNIX error codes
 from ..utils.packet import build_packet, unpack_packet
+import queue
 
 
 class Client(threading.Thread):
 
-    def __init__(self, hostname, port, username):
+    def __init__(self, hostname, port, username, use_queue=False):
+
         super().__init__()
         # Threaded socket lock
         self.client_lock = threading.Lock()
@@ -19,9 +21,12 @@ class Client(threading.Thread):
         self.username = username
         self.hostname = hostname
         self.port = port
+        self.running = True
+        self.use_queue = use_queue  # Flag to determine input mode
 
         self.tracker_addr = hostname
         self.tracker_port = port
+        self.command_queue = queue.Queue()
 
 
     # Used for reconnecting to new server
@@ -41,10 +46,55 @@ class Client(threading.Thread):
             print(f"Connected to {addr}:{port}")
 
 
+    def stop(self):
+
+        self.running = False
+        with self.client_lock:
+            if self.client:
+                try:
+                    self.client.shutdown(socket.SHUT_RDWR)
+                except:
+                    pass
+                self.client.close()
+
+
+    def write(self):
+
+        while self.running:
+            try:
+                if self.use_queue:
+                    # Get commands from the queue
+                    msg = self.command_queue.get()
+                else:
+                    # Use direct input
+                    msg = input()
+
+                if not msg.strip():
+                    continue
+
+                packet = build_packet(self.username, msg)
+                self.client.send(packet)
+
+            except KeyboardInterrupt:
+                print("\n<KeyboardInterrupt> Shutting down.")
+                self.stop()
+                break
+
+            except OSError as sock_err:
+                if sock_err.errno in (errno.EBADF, errno.EPIPE):
+                    print("Connection closed, writer exiting.")
+                    break
+                else:
+                    raise
+
+            except Exception as e:
+                print("Write error:", e)
+                break
+
+
     def receive(self):
-
-        while True:
-
+        
+        while self.running:
             try:
                 packet = self.client.recv(1024)
 
@@ -90,6 +140,7 @@ class Client(threading.Thread):
 
 
                         case "JOIN":
+
                             ip, port = body.split(':')
                             port = int(port)
                             print(f"Joining chat server @{body}")
@@ -103,9 +154,7 @@ class Client(threading.Thread):
                         
                         case "EXIT":
                             print("Goodbye!")
-                            with self.client_lock:
-                                self.client.close()
-                            # Go back to interface mode
+                            self.stop()
 
                         # NOTE: Literally all other packets are passed through here
                         case _:
@@ -123,46 +172,7 @@ class Client(threading.Thread):
                 print("Error in receive():", e)
                 break
 
-        with self.client_lock:
-            self.client.close()
-
-
-
-    def write(self):
-
-        while True:
-
-            try:
-                msg = input()
-
-                if not msg.strip():
-                    continue
-
-                packet = build_packet(self.username, msg)
-                self.client.send(packet)
-
-
-            except KeyboardInterrupt:
-                print("\n<KeyboardInterrupt> Shutting down.")
-                try:
-                    self.client.shutdown(socket.SHUT_RDWR)
-                except:
-                    pass
-                self.client.close()
-                break
-
-
-            except OSError as sock_err:
-                if sock_err.errno in (errno.EBADF, errno.EPIPE):
-                    print("Connection closed, writer exiting.")
-                    break
-                else:
-                    raise
-
-            except Exception as e:
-                print("Write error:", e)
-                break
-
+        self.stop()
 
 
 if __name__ == "__main__":
@@ -173,7 +183,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     username = None
+
+    # Can't leave it empty >:(
     while username is None:
+
         username = input("Choose your username: ").strip()
         if not username:
             print("Username cannot be empty.")
