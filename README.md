@@ -1,10 +1,21 @@
-                                *eIRC*
+`_________________________________________________________________`
+`                                eIRC                             `
+`_________________________________________________________________`
+
 
 ## Description
 
 An internet relay channel/chat capable of registering local and remote servers
 Provides a tracker (master) server which allows clients to create and join chat servers
 The tracker and chat servers utilize a tracker module for seamless service integration
+
+
+
+## Goals
+- Implement a master hub server (tracker) which allows clients to create and join servers.
+- A chat server allowing clients to chat, send files and allows for private messaging within the server.
+- Allow chat servers to handle non-socket related commands, which allows for live changes of the server's commands.
+- A client interface which allows users to be able to interface with their OS' Shell as well as the eIRC interface.
 
 
 
@@ -61,11 +72,4 @@ If a user want's to register their own remote server they'll utilize `/register`
 ```
 
 
-
-## Goals
-- Implement a master hub server (tracker) which allows clients to create and join servers.
-- A chat server allowing clients to chat, send files and allows for private messaging within the server.
-- Allow chat servers to handle non-socket related commands, which allows for live changes of the server's commands.
-- A client interface which allows users to be able to interface with their OS' Shell as well as the eIRC interface.
-
-
+`_________________________________________________________________`

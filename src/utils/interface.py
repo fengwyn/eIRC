@@ -10,6 +10,8 @@ import sys
 import subprocess
 import shlex
 from pathlib import Path
+import threading
+import queue
 
 
 # Implemented IRC Commands (useful if desired parsing by array)
@@ -73,127 +75,145 @@ def print_commands():
 # class Interface:
 #     ...
 
-# Interface, can swap between IRC and Shell mode
-def interface():
+class Interface(threading.Thread):
 
-    print_commands()
+    def __init__(self, irc_command_queue=None):
 
-    # Starts in IRC mode
-    in_shell_mode = False
+        super().__init__()
+        self.command_queue = queue.Queue()
+        self.irc_command_queue = irc_command_queue  # Queue for passing IRC commands to Client
+        self.running = True
+        self.in_shell_mode = False
+        self.daemon = True  # Thread will exit when main program exits
 
-    while True:
 
-        # Giant Try block, for handling Keyboard Interrupts :)
+    # OS Shell Commands
+    def handle_shell_command(self, input_command):
+
         try:
+            parts = shlex.split(input_command)
 
-            # If shell mode display Shell-like interface    ---- Will be skipped during first iter
-            if in_shell_mode:
+        except ValueError as e:
+            print(f"Error parsing command: {e}")
+            return
 
-                try:
-                    current_path = Path(os.getcwd())
-                    print(f"[{current_path}]$ ", end="")
+        if not parts:
+            return
 
-                except Exception as e:
-                    print(f"Error getting current directory: {e}")
-                    print("> ", end="")
-                    # Add logging exception in pass :)
-                    pass
-            
-            else:   # eoif
-                print("> ", end="")
+        command = parts[0]
+        args = parts[1:]
+
+        # CD must be able to handle multiple arguments as well as being 
+        # able to cd into directories with spaces in the name
+        if command == "cd":
+
+            new_dir = ' '.join(args) if args else "."
+
+            try:
+                os.chdir(new_dir)
+
+            except FileNotFoundError as e:
+                print(f"Error changing directory: {e}")
+
+            except PermissionError as e:
+                print(f"Permission error: {e}")
+        else:
+            try:
+                subprocess.run([command] + args)
+
+            except FileNotFoundError as e:
+                print(f"Command error: {e}")
 
 
-            ## Get user input   ##
-            input_command = input().strip()
-            ##                  ##
 
-            # If user types /sh ---- Enter Shell mode
-            if input_command == "/sh":
+    # IRC Commands, however, they'll be handled in the client.py file,
+    # therefore, we must pass the command to the Client object
+    # which will be instantiated in the client/main.py file
+    def handle_irc_command(self, input_command):
 
-                in_shell_mode = True
-                print("Entered shell mode. Type '/irc' to exit shell mode.")
-                continue
+        if self.irc_command_queue is not None:
+            # Pass the command to the Client object through the queue
+            self.irc_command_queue.put(input_command)
+        else:
+            print("Error: IRC command queue not initialized")
 
-            # If user types /irc ---- Enter IRC mode
-            elif input_command == "/irc":
 
-                in_shell_mode = False
-                print("Exited shell mode. Returning to IRC mode.")
-                continue
-            # eoif
+    # Main loop, handles both IRC and Shell mode
+    def run(self):
 
-            # Parse shell commands
-            if in_shell_mode:
+        # print_commands()
 
-                try:
-                    # Use shlex.split to parse quoted strings
-                    # This is utilized to handle cases such as: $ cd 'Directory with Spaces'
-                    parts = shlex.split(input_command)
+        while self.running:
 
-                except ValueError as e:
-
-                    print(f"Error parsing command: {e}")
-                    # Log errors here :)
-                    continue
-
-                if not parts:
-                    continue
-
-                command = parts[0]
-                args = parts[1:]
-
-                # Change Directory requires its own case management as noted above with <parts>
-                if command == "cd":
-
-                    # If provided a destination to cd go to it, else stay in cur dir.
-                    new_dir = ' '.join(args) if args else "."
-
-                    # Useful exception for handling erroneous entries.
+            try:
+                if self.in_shell_mode:
                     try:
-                        os.chdir(new_dir)
-
-                    except FileNotFoundError as e:
-                        print(f"Error changing directory: {e}")
-
-                    except PermissionError as e:
-                        print(f"Permission error: {e}")
-
-                # eoif  ---- Non-$ cd cases
+                        current_path = Path(os.getcwd())
+                        print(f"[{current_path}]$ ", end="")
+                    except Exception as e:
+                        print(f"Error getting current directory: {e}")
+                        print("> ", end="")
                 else:
-                    # We'll trust the OS to manage the command(s) :)
-                    try:
-                        subprocess.run([command] + args)
-                    except FileNotFoundError as e:
-                        print(f"Command error: {e}")
-            
-            # Handle IRC commands
-            # NOTE: This'll probably be obsolete given that client/client.py handles this now
-            else:
-                # Use match-case (switch) for mass conditional handling
-                match input_command:
+                    print("> ", end="")
 
-                    case "/commands":
-                        print_commands()
+                input_command = input().strip()
 
-                    case "/servers":
-                        print("Listing active servers...")
+                if input_command == "/commands":
+                    print_commands()
+                    continue
 
-                    case "/current":
-                        print("Current channel: ")
+                elif input_command == "/sh":
 
-                    case _:
-                        print("Invalid Command!")
+                    self.in_shell_mode = True
+                    print("Entered shell mode. Type '/irc' to exit shell mode.")
+                    continue
+
+                elif input_command == "/irc":
+                    self.in_shell_mode = False
+                    print("Exited shell mode. Returning to IRC mode.")
+                    continue
+
+                # Handle shell commands
+                if self.in_shell_mode:
+                    self.handle_shell_command(input_command)
+
+                # Handle IRC commands
+                else:
+                    self.handle_irc_command(input_command)
+
+            except KeyboardInterrupt:
+                print("\tKeyboard Interrupt...\n\tSafely shutting down application.")
+                self.running = False
+                sys.exit()
+
+            # Handle all other exceptions
+            except Exception as e:
+                print(f"Error: {e}")
 
 
-        # Manage any on-going critical processes, i.e sockets for safe shutdown
-        except KeyboardInterrupt:
-            print("\tKeyboard Interrupt...\n\tSafely shutting down application.")
-            sys.exit()
-            pass
+    # Stop the interface thread
+    def stop(self):
+        self.running = False
+
+
+
+# Doing it this way, we can swap between IRC and Shell mode seamlessly
+def interface(irc_command_queue=None):
+
+    interface_thread = Interface(irc_command_queue)
+    interface_thread.start()
+    return interface_thread
+
 
 
 
 if __name__ == "__main__":
 
-    interface()
+    interface_thread = interface()
+
+    try:
+        interface_thread.join()
+
+    except KeyboardInterrupt:
+        interface_thread.stop()
     
