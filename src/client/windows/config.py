@@ -1,3 +1,8 @@
+import win32api
+import win32con
+import win32gui
+
+
 # ----- Constants and IDs -------
 MAIN_WINDOW_CLASS = "IRCClientMainWindow"
 USERNAME_DIALOG_CLASS = "IRCUsernameDialog"

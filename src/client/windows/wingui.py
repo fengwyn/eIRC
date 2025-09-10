@@ -7,14 +7,14 @@
 # send messages (including whispers), and shows a side list of servers/users.
 
 # Run from project root (Windows only):
-#     python -m src.client.wingui
+#     python -m src.client.windows.wingui
 
-# Requirements:
+# Required package(s):
 #     pip install pywin32
 
 # Notes:
 #  - This GUI uses the Client class with use_queue=True 
-#    so GUI pushes commands into client.command_queue.
+#    so GUI pushes commands into client.command_queue (from Client model)
 #  - The GUI is only for Windows.
 ###
 
@@ -22,14 +22,14 @@ import os
 import sys
 import threading
 import queue
-import win32api
-import win32con
-import win32gui
 
+# pywin32 APIs and configs
+from src.client.windows.config import *
 from src.client.client import Client
-from src.client.client.windows.config import *
 
 
+# In essence, we're wrapping up our pre-existing Client model API with
+# pywin's API, 
 class IRCClientGUI:
 
     def __init__(self):
@@ -38,7 +38,7 @@ class IRCClientGUI:
         self.client = None
         self.username = None
         self.connected = False
-        self.message_queue = queue.Queue()
+        self.message_queue = queue.Queue() # <-- How the magic happens, GUI text
         self.list_items = []
         self.default_host = 'localhost'
         self.default_port = 8888
@@ -94,6 +94,7 @@ class IRCClientGUI:
         wc3.hbrBackground = win32con.COLOR_BTNFACE + 1
         wc3.lpszClassName = CONNECT_DIALOG_CLASS
         win32gui.RegisterClass(wc3)
+
 
     def create_main_window(self):
 
