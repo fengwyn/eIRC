@@ -801,7 +801,7 @@ class IRCClientGUI:
 
 def main():
     # Must be run on Windows
-    if os.name is not 'nt':
+    if os.name != 'nt':
         print('This GUI requires Windows (pywin32).')
         return
 
