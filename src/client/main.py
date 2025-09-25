@@ -12,7 +12,9 @@ from ..utils.interface import interface
 from .client import Client
 
 
+
 def main():
+
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="eIRC Client")
     parser.add_argument('-H', '--host', default='localhost', help='Tracker server hostname')
@@ -46,6 +48,7 @@ def main():
 
     # Main loop to handle communication between Interface and Client
     try:
+        
         while True:
             # Check for IRC commands from Interface
             try:
@@ -66,7 +69,9 @@ def main():
             except queue.Empty:
                 pass
 
+
     except KeyboardInterrupt:
+
         print("\nShutting down...")
         interface_thread.stop()
         client.stop()
