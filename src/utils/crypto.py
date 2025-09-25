@@ -58,7 +58,7 @@ class KeyManager:
                 private_key_data = f.read()
                 self.privkey = serialization.load_pem_private_key(
                     private_key_data,
-                    password=passwd  # None by default
+                    password = passwd  # None by default
                 )
             
             # Load public key
@@ -84,9 +84,9 @@ class KeyManager:
         ciphertext = self.pubkey.encrypt(
             message,
             padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None
+                mgf = padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm = hashes.SHA256(),
+                label = None
             )
         )
         return ciphertext
@@ -100,9 +100,9 @@ class KeyManager:
         plaintext = self.privkey.decrypt(
             ciphertext,
             padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None
+                mgf  =padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm = hashes.SHA256(),
+                label = None
             )
         )
         return plaintext
@@ -120,8 +120,8 @@ class KeyManager:
         signature = self.privkey.sign(
             message,
             padding.PSS(
-                mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=padding.PSS.MAX_LENGTH
+                mgf = padding.MGF1(hashes.SHA256()),
+                salt_length = padding.PSS.MAX_LENGTH
             ),
             hashes.SHA256()
         )
@@ -141,12 +141,13 @@ class KeyManager:
                 signature,
                 message,
                 padding.PSS(
-                    mgf=padding.MGF1(hashes.SHA256()),
-                    salt_length=padding.PSS.MAX_LENGTH
+                    mgf = padding.MGF1(hashes.SHA256()),
+                    salt_length = padding.PSS.MAX_LENGTH
                 ),
                 hashes.SHA256()
             )
             return True
+
         except InvalidSignature:
             return False
     
@@ -164,15 +165,15 @@ class KeyManager:
             encryption_algorithm = serialization.NoEncryption()
             
         private_pem = self.privkey.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=encryption_algorithm
+            encoding = serialization.Encoding.PEM,
+            format = serialization.PrivateFormat.PKCS8,
+            encryption_algorithm = encryption_algorithm
         )
         
         # Serialize the public key
         public_pem = self.pubkey.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
+            encoding = serialization.Encoding.PEM,
+            format = serialization.PublicFormat.SubjectPublicKeyInfo
         )
         
         try:
@@ -186,6 +187,51 @@ class KeyManager:
             print(f"Error writing to PEM files: {e}")
 
 
+    # Serializes the key such as to permit sending via Clients
+    def get_pub_key(self) -> bytes:
+
+        if self.pubkey is None:
+            raise RuntimeError("Public key is not available")
+        
+        return self.pubkey.public_bytes(
+            # We're using DER for network transfer ease-of-use :)
+            encoding = serialization.Encoding.DER,
+            format = serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+
+    
+    # Shouldn't be needed, nevertheless we cover all cases lol
+    def get_priv_key(self, password: str | None = None) -> bytes:
+
+        if self.privkey is None:
+            raise RuntimeError("Private key is not available")
+
+        if password:
+            enc_method = serialization.BestAvailableEncryption(password.encode())
+        
+        else:
+            enc_method = serialization.NoEncryption()
+        
+        return self.privkey.private_bytes(
+            encoding = serialization.Encoding.DER,
+            format = serialization.PrivateFormat.PKCS8,
+            encryption_algorithm = enc_method
+        )
+
+
+    # Static method decorators permit these functions to behave w/o access to internal resources :>
+    @staticmethod
+    def load_pub_key(pubkey_bytes: bytes) -> bytes:
+        return serialization.load_der_public_key(pubkey_bytes)
+
+
+    @staticmethod
+    def load_priv_key(privkey_bytes: bytes, password: str | None = None) -> bytes:
+
+        return serialization.load_der_private_key(
+            privkey_bytes,
+            password = password.encode() if password else None
+            )
 
 # Usages examples
 if __name__ == "__main__":
