@@ -52,7 +52,7 @@ def unpack_packet(packet: bytes) -> dict:
     # Unpack body
     body_len = struct.unpack_from('<H', packet, offset)[0]
     offset += 2
-    body = struct.unpack_from(f'<{body_len}s', packet, offset)[0].decode('utf-8')
+    body = struct.unpack_from(f'<{body_len}s', packet, offset)[0].decode('utf-8') # Might have to forgo decoding in-function to permit encryption
     offset += body_len
 
     # Unpack date

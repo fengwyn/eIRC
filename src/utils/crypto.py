@@ -1,3 +1,6 @@
+# https://cryptography.io/en/latest/
+# https://elc.github.io/python-security/chapters/07_Asymmetric_Encryption.html
+
 # Cryptography and Hashing utilities for Client use
 
 
@@ -58,7 +61,7 @@ class KeyManager:
                 private_key_data = f.read()
                 self.privkey = serialization.load_pem_private_key(
                     private_key_data,
-                    password=passwd  # None by default
+                    password = passwd  # None by default
                 )
             
             # Load public key
@@ -84,9 +87,9 @@ class KeyManager:
         ciphertext = self.pubkey.encrypt(
             message,
             padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None
+                mgf = padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm = hashes.SHA256(),
+                label = None
             )
         )
         return ciphertext
@@ -100,9 +103,9 @@ class KeyManager:
         plaintext = self.privkey.decrypt(
             ciphertext,
             padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None
+                mgf  =padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm = hashes.SHA256(),
+                label = None
             )
         )
         return plaintext
@@ -120,8 +123,8 @@ class KeyManager:
         signature = self.privkey.sign(
             message,
             padding.PSS(
-                mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=padding.PSS.MAX_LENGTH
+                mgf = padding.MGF1(hashes.SHA256()),
+                salt_length = padding.PSS.MAX_LENGTH
             ),
             hashes.SHA256()
         )
@@ -141,12 +144,13 @@ class KeyManager:
                 signature,
                 message,
                 padding.PSS(
-                    mgf=padding.MGF1(hashes.SHA256()),
-                    salt_length=padding.PSS.MAX_LENGTH
+                    mgf = padding.MGF1(hashes.SHA256()),
+                    salt_length = padding.PSS.MAX_LENGTH
                 ),
                 hashes.SHA256()
             )
             return True
+
         except InvalidSignature:
             return False
     
@@ -164,15 +168,15 @@ class KeyManager:
             encryption_algorithm = serialization.NoEncryption()
             
         private_pem = self.privkey.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=encryption_algorithm
+            encoding = serialization.Encoding.PEM,
+            format = serialization.PrivateFormat.PKCS8,
+            encryption_algorithm = encryption_algorithm
         )
         
         # Serialize the public key
         public_pem = self.pubkey.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
+            encoding = serialization.Encoding.PEM,
+            format = serialization.PublicFormat.SubjectPublicKeyInfo
         )
         
         try:
@@ -186,11 +190,83 @@ class KeyManager:
             print(f"Error writing to PEM files: {e}")
 
 
+    # Serializes the key such as to permit sending via Clients
+    def get_pub_key(self) -> bytes:
 
-# Usages examples
-if __name__ == "__main__":
+        if self.pubkey is None:
+            raise RuntimeError("Public key is not available")
+        
+        return self.pubkey.public_bytes(
+            # We're using DER for network transfer ease-of-use :)
+            encoding = serialization.Encoding.DER,
+            format = serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+
     
-    # Test with auto-generated keys
+    # Can be useful for group messaging
+    def get_priv_key(self, password: str | None = None) -> bytes:
+
+        if self.privkey is None:
+            raise RuntimeError("Private key is not available")
+
+        if password:
+            enc_method = serialization.BestAvailableEncryption(password.encode())
+        
+        else:
+            enc_method = serialization.NoEncryption()
+        
+        return self.privkey.private_bytes(
+            encoding = serialization.Encoding.DER,
+            format = serialization.PrivateFormat.PKCS8,
+            encryption_algorithm = enc_method
+        )
+
+
+    # Static method decorators permit these functions to behave w/o access to internal resources :>
+    @staticmethod
+    def load_pub_key(pubkey_bytes: bytes) -> bytes:
+        return serialization.load_der_public_key(pubkey_bytes)
+
+
+    @staticmethod
+    def load_priv_key(privkey_bytes: bytes, password: str | None = None) -> bytes:
+
+        return serialization.load_der_private_key(
+            privkey_bytes,
+            password = password.encode() if password else None
+        )
+
+
+
+# ----------------------------------------------------------------------------------------------------------------
+
+def asym_test():
+
+    KeyMan = KeyManager()
+
+    msg = "Cow man is real"
+    ciphertext = KeyMan.encrypt(msg)
+
+    print(KeyMan.decrypt(ciphertext))
+
+    # Now we're going to see the export -> send -> reconstruct methods used in Client networking
+    pub_bytes = KeyMan.get_pub_key()
+    recv_pub = KeyManager.load_pub_key(pub_bytes)
+
+    # We'll use the reconstructed key for encryption as used in asymmetric comms
+    asym = recv_pub.encrypt(msg.encode(), 
+            padding.OAEP(mgf = padding.MGF1(hashes.SHA256()),
+            algorithm = hashes.SHA256(),
+            label = None)
+        )
+    
+    print(KeyMan.decrypt(asym).decode('utf-8'))
+
+    pass
+
+
+def km_tests():
+        # Test with auto-generated keys
     print("Testing with auto-generated keys:")
     km_auto = KeyManager(keytype=_AUTO)
     
@@ -234,3 +310,17 @@ if __name__ == "__main__":
         
     except Exception as e:
         print(f"Manual key loading test failed: {e}")
+
+    pass
+
+
+
+
+
+# Usages examples
+if __name__ == "__main__":
+    
+
+    asym_test()
+
+    km_tests()

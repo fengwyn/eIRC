@@ -12,6 +12,10 @@ import errno    # UNIX error codes
 from ..utils.packet import build_packet, unpack_packet
 import queue
 
+# Handles asymmetric key escrow, plaintext encryption and 
+from ..utils.crypto import KeyManager
+
+
 
 class Client(threading.Thread):
 
@@ -35,6 +39,7 @@ class Client(threading.Thread):
 
     # Used for reconnecting to new server
     def connect(self, addr, port):
+
         # Check if already have a client socket
         with self.client_lock:
             if self.client:
@@ -53,6 +58,7 @@ class Client(threading.Thread):
     def stop(self):
 
         self.running = False
+
         with self.client_lock:
             if self.client:
                 try:
@@ -65,6 +71,7 @@ class Client(threading.Thread):
     def write(self):
 
         while self.running:
+
             try:
                 if self.use_queue:
                     # Get commands from the queue
@@ -99,6 +106,7 @@ class Client(threading.Thread):
     def receive(self):
         
         while self.running:
+            
             try:
                 packet = self.client.recv(1024)
 
