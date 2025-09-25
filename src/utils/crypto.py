@@ -1,3 +1,6 @@
+# https://cryptography.io/en/latest/
+# https://elc.github.io/python-security/chapters/07_Asymmetric_Encryption.html
+
 # Cryptography and Hashing utilities for Client use
 
 
@@ -200,7 +203,7 @@ class KeyManager:
         )
 
     
-    # Shouldn't be needed, nevertheless we cover all cases lol
+    # Can be useful for group messaging
     def get_priv_key(self, password: str | None = None) -> bytes:
 
         if self.privkey is None:
@@ -231,12 +234,39 @@ class KeyManager:
         return serialization.load_der_private_key(
             privkey_bytes,
             password = password.encode() if password else None
-            )
+        )
 
-# Usages examples
-if __name__ == "__main__":
+
+
+# ----------------------------------------------------------------------------------------------------------------
+
+def asym_test():
+
+    KeyMan = KeyManager()
+
+    msg = "Cow man is real"
+    ciphertext = KeyMan.encrypt(msg)
+
+    print(KeyMan.decrypt(ciphertext))
+
+    # Now we're going to see the export -> send -> reconstruct methods used in Client networking
+    pub_bytes = KeyMan.get_pub_key()
+    recv_pub = KeyManager.load_pub_key(pub_bytes)
+
+    # We'll use the reconstructed key for encryption as used in asymmetric comms
+    asym = recv_pub.encrypt(msg.encode(), 
+            padding.OAEP(mgf = padding.MGF1(hashes.SHA256()),
+            algorithm = hashes.SHA256(),
+            label = None)
+        )
     
-    # Test with auto-generated keys
+    print(KeyMan.decrypt(asym).decode('utf-8'))
+
+    pass
+
+
+def km_tests():
+        # Test with auto-generated keys
     print("Testing with auto-generated keys:")
     km_auto = KeyManager(keytype=_AUTO)
     
@@ -280,3 +310,17 @@ if __name__ == "__main__":
         
     except Exception as e:
         print(f"Manual key loading test failed: {e}")
+
+    pass
+
+
+
+
+
+# Usages examples
+if __name__ == "__main__":
+    
+
+    asym_test()
+
+    km_tests()

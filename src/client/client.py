@@ -12,6 +12,10 @@ import errno    # UNIX error codes
 from ..utils.packet import build_packet, unpack_packet
 import queue
 
+# Handles asymmetric key escrow, plaintext encryption and 
+from ..utils.crypto import KeyManager
+
+
 
 class Client(threading.Thread):
 
