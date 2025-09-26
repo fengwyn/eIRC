@@ -37,6 +37,10 @@ class Client(threading.Thread):
         self.command_queue = queue.Queue()
 
 
+        # Cryptographic Module ---- _AUTO = 1 , _MANUAL = 0
+        self.KeyMan = KeyManager(keytype=1, privkey_path=None, pubkey_path=None, passwd=None)
+
+
     # Used for reconnecting to new server
     def connect(self, addr, port):
 
