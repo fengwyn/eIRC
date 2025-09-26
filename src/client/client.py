@@ -25,6 +25,10 @@ class Client(threading.Thread):
         # Threaded socket lock
         self.client_lock = threading.Lock()
 
+        # Threads
+        self.write_thread = None
+        self.receive_thread = None
+
         self.client = None
         self.username = username
         self.hostname = hostname
@@ -58,6 +62,17 @@ class Client(threading.Thread):
             self.client.connect((addr, port))
             print(f"Connected to {addr}:{port}")
 
+            # Manage threads here
+            try:
+                if self.write_thread is None and self.receive_thread is None:
+                    self.write_thread = threading.Thread(target=self.write, daemon=True)
+                    self.receive_thread = threading.Thread(target=self.receive, daemon=True)
+                    self.write_thread.start()
+                    self.receive_thread.start()
+            except Exception as e:
+                print(f"Error starting threads: {e}")
+                pass
+
 
     def stop(self):
 
@@ -70,7 +85,9 @@ class Client(threading.Thread):
                 except:
                     pass
                 self.client.close()
-
+                self.client = None
+                self.write_thread = None
+                self.receive_thread = None
 
     def write(self):
 
@@ -85,6 +102,11 @@ class Client(threading.Thread):
                     msg = input()
 
                 if not msg.strip():
+                    continue
+
+                if msg == "/connect":
+                    if self.client is None:
+                        self.connect(self.hostname, self.port)
                     continue
 
                 packet = build_packet(self.username, msg)
@@ -212,7 +234,7 @@ if __name__ == "__main__":
     # Initial connect to tracker
     client.connect(args.host, args.port)
 
-    threading.Thread(target=client.receive, daemon=True).start()
-    threading.Thread(target=client.write, daemon=True).start()
+    # threading.Thread(target=client.receive, daemon=True).start()
+    # threading.Thread(target=client.write, daemon=True).start()
     # Keep main alive
     threading.Event().wait()
