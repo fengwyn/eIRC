@@ -28,12 +28,15 @@ class Client(threading.Thread):
         # Threads
         self.write_thread = None
         self.receive_thread = None
+        # self.running = True   # <----- ** Obsolete due to rx and wr running flags, could be useful in the future
+        self.rx_running = True
+        self.wr_running = True
 
         self.client = None
         self.username = username
         self.hostname = hostname
         self.port = port
-        self.running = True
+        
         self.use_queue = use_queue  # Flag to determine input mode
 
         self.tracker_addr = hostname
@@ -45,7 +48,7 @@ class Client(threading.Thread):
         self.KeyMan = KeyManager(keytype=1, privkey_path=None, pubkey_path=None, passwd=None)
 
 
-    # Used for reconnecting to new server
+    # Used for connecting to new server  <Starts worker threads>
     def connect(self, addr, port):
 
         # Check if already have a client socket
@@ -54,7 +57,8 @@ class Client(threading.Thread):
                 # First close the connection
                 try:
                     self.client.close()
-                except:
+                except Exception as e:
+                    print(f"{self.connect.func_name}: {e}")
                     pass
 
             # Now connect to new server
@@ -64,34 +68,58 @@ class Client(threading.Thread):
 
             # Manage threads here
             try:
-                if self.write_thread is None and self.receive_thread is None:
+                if self.write_thread is None:
                     self.write_thread = threading.Thread(target=self.write, daemon=True)
-                    self.receive_thread = threading.Thread(target=self.receive, daemon=True)
                     self.write_thread.start()
+                    self.wr_running = True
+                    print("Writer thread is running")
+
+                if self.receive_thread is None:
+                    self.receive_thread = threading.Thread(target=self.receive, daemon=True)
                     self.receive_thread.start()
+                    self.rx_running = True
+                    print("Receiver thread is running")
+
+                # if self.wr_running and self.rx_running:
+                #     self.running = True
+
             except Exception as e:
-                print(f"Error starting threads: {e}")
-                pass
+                print(f"Error starting thread(s): {e}")
 
 
+    # <Stops worker threads>
     def stop(self):
-
-        self.running = False
 
         with self.client_lock:
             if self.client:
                 try:
                     self.client.shutdown(socket.SHUT_RDWR)
-                except:
-                    pass
-                self.client.close()
-                self.client = None
-                self.write_thread = None
-                self.receive_thread = None
+                    self.client.close()
+                    self.client = None
+                    self.write_thread = None
+                    self.receive_thread = None
+                    # self.running = False      # <------- *********
+                except Exception as e:
+                    print(f"stop: {e}")
+            # eoif
+        # eowith
+
+    # Handles thread nullification
+    def _shutdown(self):
+
+        try:
+            self.write_thread = None
+            self.receive_thread = None
+            self.wr_running = False
+            self.rx_running = False
+            # self.running = False
+        except Exception as e:
+            print(f"_shutdown: {e}")
+
 
     def write(self):
 
-        while self.running:
+        while self.wr_running:
 
             try:
                 if self.use_queue:
@@ -107,8 +135,10 @@ class Client(threading.Thread):
                 if msg == "/connect":
                     if self.client is None:
                         self.connect(self.hostname, self.port)
-                    continue
+                        # self.client.send(self.username.encode('ascii'))
+                        continue
 
+                # Build and send packet
                 packet = build_packet(self.username, msg)
                 self.client.send(packet)
 
@@ -131,9 +161,13 @@ class Client(threading.Thread):
 
     def receive(self):
         
-        while self.running:
+        while self.rx_running:
             
             try:
+
+                if self.client is None:
+                    break
+
                 packet = self.client.recv(1024)
 
                 if not packet:
@@ -237,4 +271,9 @@ if __name__ == "__main__":
     # threading.Thread(target=client.receive, daemon=True).start()
     # threading.Thread(target=client.write, daemon=True).start()
     # Keep main alive
-    threading.Event().wait()
+    try:
+        while client.running:
+            threading.Event().wait(1.0)
+    except KeyboardInterrupt:
+        client._shutdown()
+        exit(0)

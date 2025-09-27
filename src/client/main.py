@@ -74,9 +74,9 @@ def main():
 
         print("\nShutting down...")
         interface_thread.stop()
-        client.stop()
-        receive_thread.join()
-        write_thread.join()
+        client._shutdown()
+        # receive_thread.join()
+        # write_thread.join()
         interface_thread.join()
 
 
