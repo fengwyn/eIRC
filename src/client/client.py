@@ -19,7 +19,7 @@ from ..utils.crypto import KeyManager
 
 class Client(threading.Thread):
 
-    def __init__(self, hostname, port, username, use_queue=False):
+    def __init__(self, hostname, port, username, use_queue=False, keytype=1, privkey_path=None, pubkey_path=None, passwd=None):
 
         super().__init__()
         # Threaded socket lock
@@ -45,7 +45,7 @@ class Client(threading.Thread):
 
 
         # Cryptographic Module ---- _AUTO = 1 , _MANUAL = 0
-        self.KeyMan = KeyManager(keytype=1, privkey_path=None, pubkey_path=None, passwd=None)
+        self.KeyMan = KeyManager(keytype=1, privkey_path=privkey_path, pubkey_path=pubkey_path, passwd=passwd)
 
 
     # Used for connecting to new server  <Starts worker threads>
@@ -132,11 +132,32 @@ class Client(threading.Thread):
                 if not msg.strip():
                     continue
 
+                # Used when reconnecting to IRC tracker server
                 if msg == "/connect":
                     if self.client is None:
                         self.connect(self.hostname, self.port)
                         # self.client.send(self.username.encode('ascii'))
                         continue
+
+                # Direct messages will utilize asymmetric encryption
+                if msg == "/whisper":
+
+                    # We'll need to know who the recipient is, 
+                    # to look them up in our key cache.
+                    _, recipient, plaintext = msg.strip(' ')
+
+                    if recipient in KeyMan.key_cache:
+                        # Let's get the cached key
+                        fkey = KeyMan.key_cache[recipient]
+                        if isinstance(fkey, bytes):
+                            try:
+                                ciphertext = KeyMan.encrypt(plaintext, fkey)
+                            except:
+                                print("Error encrypting plaintext...")
+
+
+
+                    pass
 
                 # Build and send packet
                 packet = build_packet(self.username, msg)
@@ -183,7 +204,7 @@ class Client(threading.Thread):
                 try:
                     p = unpack_packet(packet)
                     sender = p['header']
-                    body   = p['body']
+                    body   = p['body'].decode('utf-8') # <--- *** Changed decoding in-client
                     date   = p['date']
                     print(f"[{date}] {sender}: {body}")
 

@@ -47,7 +47,7 @@ class KeyManager:
             key_size=2048
         )
         self.pubkey = self.privkey.public_key()
-    
+        print(type(self.pubkey))
 
     # Load keys if using _MANUAL
     def _load_keys_from_files(self, privkey_path, pubkey_path, psswd):
@@ -76,13 +76,29 @@ class KeyManager:
             raise RuntimeError(f"Failed to load keys from files: {e}")
     
 
-    def encrypt(self, message) -> bytes:
+    # We can encrypt using our key or foreign key
+    def encrypt(self, message, key: bytes | None=None) -> bytes:
 
-        if self.pubkey is None:
-            raise RuntimeError("Public key not available")
-            
         if isinstance(message, str):
             message = message.encode('utf-8')
+
+
+        # Using foreign key (key is not None)
+        if isinstance(key, bytes):
+            # We'll turn the key bytes into serialized PEM key            
+            key = self.load_pubkey(key)
+            if key:
+                return key.encrypt(message,
+                        padding.OAEP(
+                            mgf = padding.MGF1(algorithm=hashes.SHA256()),
+                            algorithm = hashes.SHA256(),
+                            label = None
+                        )
+                    )
+
+        # If using our pubkey (key arg is None)
+        if self.pubkey is None:
+            raise RuntimeError("Public key not available")
             
         ciphertext = self.pubkey.encrypt(
             message,
@@ -191,7 +207,7 @@ class KeyManager:
 
 
     # Serializes the key such as to permit sending via Clients
-    def get_pub_key(self) -> bytes:
+    def get_pubkey(self) -> bytes:
 
         if self.pubkey is None:
             raise RuntimeError("Public key is not available")
@@ -204,7 +220,7 @@ class KeyManager:
 
     
     # Can be useful for group messaging
-    def get_priv_key(self, password: str | None = None) -> bytes:
+    def get_privkey(self, password: str | None = None) -> bytes:
 
         if self.privkey is None:
             raise RuntimeError("Private key is not available")
@@ -257,12 +273,12 @@ class KeyManager:
 
     # Static method decorators permit these functions to behave w/o access to internal resources :>
     @staticmethod
-    def load_pub_key(pubkey_bytes: bytes) -> bytes:
+    def load_pubkey(pubkey_bytes: bytes) -> bytes:
         return serialization.load_der_public_key(pubkey_bytes)
 
 
     @staticmethod
-    def load_priv_key(privkey_bytes: bytes, password: str | None = None) -> bytes:
+    def load_privkey(privkey_bytes: bytes, password: str | None = None) -> bytes:
 
         return serialization.load_der_private_key(
             privkey_bytes,
@@ -278,13 +294,13 @@ def asym_test():
     KeyMan = KeyManager()
 
     msg = "Cow man is real"
-    ciphertext = KeyMan.encrypt(msg)
+    ciphertext = KeyMan.encrypt(msg, KeyMan.get_pubkey())
 
     print(KeyMan.decrypt(ciphertext))
 
     # Now we're going to see the export -> send -> reconstruct methods used in Client networking
-    pub_bytes = KeyMan.get_pub_key()
-    recv_pub = KeyManager.load_pub_key(pub_bytes)
+    pub_bytes = KeyMan.get_pubkey()
+    recv_pub = KeyManager.load_pubkey(pub_bytes)
 
     # We'll use the reconstructed key for encryption as used in asymmetric comms
     asym = recv_pub.encrypt(msg.encode(), 
