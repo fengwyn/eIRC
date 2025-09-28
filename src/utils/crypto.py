@@ -28,7 +28,7 @@ class KeyManager:
 
         self.privkey = None
         self.pubkey = None
-
+        self.key_cache = dict() # We'll save the direct messenger's id and key here: {id: str, key: bytes}
 
         if keytype == _MANUAL:
 
@@ -73,7 +73,7 @@ class KeyManager:
                 self.pubkey = serialization.load_pem_public_key(public_key_data)
                 
         except Exception as e:
-            raise RuntimeError(f"Failed to load keys from files: {str(e)}")
+            raise RuntimeError(f"Failed to load keys from files: {e}")
     
 
     def encrypt(self, message) -> bytes:
@@ -220,6 +220,39 @@ class KeyManager:
             format = serialization.PrivateFormat.PKCS8,
             encryption_algorithm = enc_method
         )
+
+
+    # Insert to Key Cache
+    def insert_cache(self, keyid: str, key: bytes) -> bool:
+
+        if key in self.key_cache:
+            return True
+
+        try:
+            self.key_cache[keyid] = key
+
+        except Exception as e:
+            print(f"Exception error saving key in cache: {e}")
+            return False
+
+        return True
+
+
+    # Delete from Cache
+    def delete_cache(self, keyid: str) -> bool:
+
+        if key not in self.key_cache:
+            return True
+
+        try:
+            # Del should automatically check if value exists in dict()
+            del(self.key_cache[keyid])
+
+        except Exception as e:
+            print(f"Exception error: Could not delete key-val from cache: {e}")
+            return False
+    
+        return True
 
 
     # Static method decorators permit these functions to behave w/o access to internal resources :>

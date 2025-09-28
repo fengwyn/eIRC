@@ -312,6 +312,8 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--messagelength', type=int, default=1024)
     args = parser.parse_args()
 
-    allocator = PortAllocator(start_port=9000)
+    # Previously, using default 9000 val, could create error of Port addr already in use, 
+    # if changing the default port in CLI startup
+    allocator = PortAllocator(start_port=args.port+1)
     daemon = TrackerDaemon(args.host, args.port, allocator, args.maxconns, args.messagelength)
     daemon.start()
