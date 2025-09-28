@@ -93,7 +93,7 @@ class TrackerDaemon:
 
                 # Unpack packet
                 read_packet: dict() = unpack_packet(packet)
-                header, body, date = read_packet['header'], read_packet['body'], read_packet['date']
+                header, body, date = read_packet['header'], read_packet['body'].decode('utf-8'), read_packet['date']
                 # Initialize command buffer
                 command = None
 
