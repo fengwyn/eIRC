@@ -132,32 +132,59 @@ class Client(threading.Thread):
                 if not msg.strip():
                     continue
 
-                # Used when reconnecting to IRC tracker server
-                if msg == "/connect":
-                    if self.client is None:
-                        self.connect(self.hostname, self.port)
-                        # self.client.send(self.username.encode('ascii'))
-                        continue
+                # Command handling
+                if msg.startswith("/"):
 
-                # Direct messages will utilize asymmetric encryption
-                if msg == "/whisper":
+                    parts = msg.split(" ", 2)
+                    cmd = parts[0]
 
-                    # We'll need to know who the recipient is, 
-                    # to look them up in our key cache.
-                    _, recipient, plaintext = msg.strip(' ')
+                    match(cmd):
 
-                    if recipient in KeyMan.key_cache:
-                        # Let's get the cached key
-                        fkey = KeyMan.key_cache[recipient]
-                        if isinstance(fkey, bytes):
-                            try:
-                                ciphertext = KeyMan.encrypt(plaintext, fkey)
-                            except:
-                                print("Error encrypting plaintext...")
+                        # Used when reconnecting to IRC tracker server
+                        case '/connect':
+                            if self.client is None:
+                                self.connect(self.hostname, self.port)
+                                # self.client.send(self.username.encode('ascii'))   
+                                continue
+                            print("Connected.")
 
 
+                        # Direct messages will utilize asymmetric encryption
+                        case '/whisper':
 
-                    pass
+                            if len(parts) < 2:
+                                print("Usage: /whisper <recipient> <message>")
+                                continue
+
+                            # We'll need to know who the recipient is, 
+                            # to look them up in our key cache.
+                            recipient, plaintext = parts[1], parts[2]
+
+                            # We have to format the packet differently,
+                            # because we'll be encrypting our entire body
+                            # we cannot use it to contain our username, recipient and msg
+                            # all together, we'll have to place our username and recipient's
+                            # in the header.
+
+                            print(f"cmd:{parts[0]}\trecipient:{recipient}\tplaintext:{plaintext}")
+
+                            if recipient in self.KeyMan.key_cache:
+                                # Let's get the cached key
+                                fkey = self.KeyMan.key_cache[recipient]
+                                if isinstance(fkey, bytes):
+                                    try:
+                                        ciphertext = self.KeyMan.encrypt(plaintext, fkey)
+                                    except Exception as e:
+                                        print(f"Error encrypting plaintext: {e}")
+                                        continue
+                            
+                                # msg = ciphertext
+                            # Not in cache ---- Request key from server keystore or direct from user
+                            else:
+                                print("Not in Key Cache")
+                                pass
+                        # eof command handling
+                    # eof case
 
                 # Build and send packet
                 packet = build_packet(self.username, msg)
@@ -177,6 +204,9 @@ class Client(threading.Thread):
 
             except Exception as e:
                 print("Write error:", e)
+                if self.client is None:
+                    # If we're here, client is None after /exit -- Working as intended
+                    print("Currently logged out of IRC. Enter /connect to reconnect to IRC server!")
                 break
 
 
