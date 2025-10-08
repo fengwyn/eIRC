@@ -6,16 +6,8 @@
 
 // Build for python modules
 #include "Python.h"
+#include "packet.h"
 
-// Structure to hold unpacked packet data
-typedef struct {
-
-    char *header;
-    uint8_t *body;
-    size_t body_len;
-    char *date;
-
-} PacketData;
 
 // Builds packet from header and body strings
 // Returns allocated byte array (caller must free)
