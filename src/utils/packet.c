@@ -3,9 +3,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
-
-// Build for python modules
-#include "Python.h"
 #include "packet.h"
 
 
