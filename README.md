@@ -96,6 +96,11 @@ If a user want's to register their own remote server they'll utilize `/register`
             └─ others
 ```
 
+CHANGES:
+
+    utils.tracker: Instead of providing a class for holding the server information via dict(), it'll use a Redis server
+
+
 
 `_________________________________________________________________`
 42 79 20 66 65 6E 67 77 79 6E 28 20 6F 20 3E 20 6F 29
