@@ -5,14 +5,9 @@
 # tracker.py: Contains modules for server/channel management
 # Tracker Object for Handling Hosts, User logs and Redirect Connections
 
+# from common import SharedQueue    # <--- Useful if buffering is required
 import logging
 import threading
-
-
-# Redis will be used to become a 'Data Access Object' instead of the legacy self.X = dict() class
-# The connections to redis will be performed by HSET, HGET and HHDEL operations, in the corresponding methods
-# import redis
-# import json
 
 # <Parent Class> A tracker for managing admins and members (users or servers).
 # Will be accessed asynchronically, must protect with mutex

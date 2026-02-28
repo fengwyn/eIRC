@@ -184,13 +184,20 @@ class TrackerDaemon:
                         # List active servers
                         case "/servers":
 
-                            servers = self.tracker.get_server_list()
-                            resp = "ACTIVE_SERVERS\n"
-                            for sname, saddr in servers.items():
-                                resp += f"{sname} @ {saddr}\n"
+                            try:
+                                # This now calls the Redis-backed utils method automatically
+                                servers = self.tracker.get_server_list() 
+                                response = build_packet("/servers", str(servers))
+                                conn.send(response)
 
-                            packet = build_packet("/servers", resp)
-                            conn.send(packet)
+                            except Exception as e:
+                                servers = self.tracker.get_server_list()
+                                resp = "ACTIVE_SERVERS\n"
+                                for sname, saddr in servers.items():
+                                    resp += f"{sname} @ {saddr}\n"
+
+                                packet = build_packet("/servers", resp)
+                                conn.send(packet)
 
 
                         # Join a node room

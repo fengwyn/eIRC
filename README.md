@@ -1,12 +1,12 @@
 `_________________________________________________________________`
-`                       NODE RELAY SYSTEM                         `
+`                       Internet Relay Channel                    `
 `_________________________________________________________________`
 
 ( o > o)/
 
 ## Description
 
-Node Relay System is a system used to create, 
+Internet Relay Channel is a system used to create, 
 administrate and coordinate local and remote network nodes.
 
 The Tracker server, instantiates a tracker ledger, used in the creation
@@ -24,7 +24,7 @@ and allow the containerized (modern) machine to behave as one.
 - Implement a master hub server (tracker) which allows clients to create and join servers.
 - A node server allowing clients to pass messages, send files and allows for private messaging within the server.
 - Allow node servers to handle non-socket related commands, which allows for live changes of the server's commands.
-- A client interface which allows users to be able to interface with their OS' Shell as well as the Node Relay System interface.
+- A client interface which allows users to be able to interface with their OS' Shell as well as the Internet Relay Channel interface.
 
 
 
@@ -39,14 +39,14 @@ of which are:
                     `ServerTracker` and `NodeTracker`, used by Tracker (master) server 
                     and Node (sub) Servers respectively.
     
-    * interface.cpp: Provides functionalities for alternating between OS Shell and Node Relay System interface. 
+    * interface.cpp: Provides functionalities for alternating between OS Shell and Internet Relay Channel interface. 
 ```
 
 
 
 ## User Interaction and Design
 
-Run from project root directory, Node Relay System/ then:
+Run from project root directory, Internet Relay Channel/ then:
 ```
 * Running Client (no Shell interface):      $ [WIP: python -m src.client.client <arguments>]
 * Running Client (with Shell interface):    $ [WIP: python -m src.client.main <arguments>]
@@ -57,7 +57,7 @@ Run from project root directory, Node Relay System/ then:
 
 A `Tracker` server must be hosted by any system capable of creating socket connections.
 A `Client` runs a provided `interface` which allows them to connect to a tracker server,
-which then allows the user `Client` to use the Node Relay System utilities.
+which then allows the user `Client` to use the Internet Relay Channel utilities.
 
 A node server can be instantiated within `Tracker` by a `Client` by using the `/create` command
 and following its use instructions, this will create a sub-server at the `Tracker`'s local address.
@@ -67,7 +67,7 @@ If a user want's to register their own remote server they'll utilize `/register`
 
 ## Directory Structure
 ```
-    Node Relay System/               <- [WIP]
+    eIRC/               <- [WIP]
     |--src/                        
         ├── client/
         │   ├── __init__.py
@@ -95,6 +95,12 @@ If a user want's to register their own remote server they'll utilize `/register`
             ├─ crypto.py or crypto.cpp
             └─ others
 ```
+
+DATABASES:
+    Redis - Will be used as a high-speed buffer. The Nodes push sensor/message data here.
+            It'll handle the "live" state (who is connected, current readings...).
+
+    ClickHouse - It'll ingest batch data rows and allow us to run queries for building statistical models.
 
 CHANGES:
 

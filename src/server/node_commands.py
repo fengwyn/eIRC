@@ -71,6 +71,7 @@ class CommandHandler:
     # Handle /whisper command
     # NOTE: This command is also handled in server.py
     # we're just building the packet here
+    # NOTE: Encryption changes the command to use the header for placing src and dst users as /whisper|src|dst
     def handle_whisper(self, command: str) -> bytes:
 
         parts = command.split(maxsplit=2)  # Split into ['/whisper', 'username', 'message']
