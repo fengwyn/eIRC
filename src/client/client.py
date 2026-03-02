@@ -152,40 +152,16 @@ class Client(threading.Thread):
                         # Direct messages will utilize asymmetric encryption
                         case '/whisper':
 
-                            if len(parts) < 2:
+                            if len(parts) < 3:
                                 print("Usage: /whisper <recipient> <message>")
                                 continue
 
-                            # We'll need to know who the recipient is, 
-                            # to look them up in our key cache.
-                            recipient, plaintext = parts[1], parts[2]
-
-                            # We have to format the packet differently,
-                            # because we'll be encrypting our entire body
-                            # we cannot use it to contain our username, recipient and msg
-                            # all together, we'll have to place our username and recipient's
-                            # in the header.
-
-                            print(f"cmd:{parts[0]}\trecipient:{recipient}\tplaintext:{plaintext}")
-
-                            if recipient in self.KeyMan.key_cache:
-                                # Let's get the cached key
-                                fkey = self.KeyMan.key_cache[recipient]
-                                if isinstance(fkey, bytes):
-                                    try:
-                                        ciphertext = self.KeyMan.encrypt(plaintext, fkey)
-                                    except Exception as e:
-                                        print(f"Error encrypting plaintext: {e}")
-                                        continue
-                            
-                                # msg = ciphertext
-                            # Not in cache ---- Request key from server keystore or direct from user
-                            else:
-                                print("Not in Key Cache")
-                                pass
+                            # TODO: Re-integrate KeyManager encryption once key exchange protocol is complete.
+                            # Encryption plan: header becomes "/whisper|src|dst", body becomes ciphertext.
+                            # For now, whisper routing is handled entirely server-side.
                         # eof command handling
                     # eof case
-
+                print(f"Username:{self.username}|Message:{msg}")
                 # Build and send packet
                 packet = build_packet(self.username, msg)
                 self.client.send(packet)

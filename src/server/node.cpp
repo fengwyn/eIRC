@@ -1,13 +1,10 @@
 // node.cpp: C++ equivalent of server/server.py
 // TCP node room server — one thread per connected client.
 //
-// Build (example):
-//   g++ -std=c++17 -pthread -o node node.cpp ../utils/packet.c \
-//       [tracker.o] [node_commands.o] -I../utils -I.
-//
+// Build (example) -- Use make:
+// g++ -std=c++17 -pthread -o node node.cpp ../utils/packet.c tracker.o node_commands.o -I../utils -I.
 // Run (standalone):
-//   ./node -H localhost -P 8888 -m 32 -l 128 \
-//          -n "room" -c "admin" -a "127.0.0.1:9999" -i 0 -p ""
+//   ./node -H localhost -P 8888 -m 32 -l 128 -n "room" -c "admin" -a "127.0.0.1:9999" -i 0 -p ""
 
 #include "node.h"
 #include "node_commands.h"
@@ -18,8 +15,6 @@
 #include <cstddef>
 extern "C" {
     #include "../utils/packet.h"
-    // free_packet_data is defined in packet.c but not declared in packet.h
-    extern void free_packet_data(PacketData *data);
 }
 
 // Standard library

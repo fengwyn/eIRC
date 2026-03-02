@@ -46,6 +46,7 @@ of which are:
 
 ## User Interaction and Design
 
+[PYTHON]
 Run from project root directory, Internet Relay Channel/ then:
 ```
 * Running Client (no Shell interface):      $ [WIP: python -m src.client.client <arguments>]
@@ -63,6 +64,11 @@ A node server can be instantiated within `Tracker` by a `Client` by using the `/
 and following its use instructions, this will create a sub-server at the `Tracker`'s local address.
 If a user want's to register their own remote server they'll utilize `/register` and follow the use instructions.
 
+[C++]
+make              # builds build/node
+make packet-test  # builds standalone packet test binary
+make packet-so    # builds packet.so for Python ctypes
+make clean        # removes build/
 
 
 ## Directory Structure
@@ -96,6 +102,7 @@ If a user want's to register their own remote server they'll utilize `/register`
             └─ others
 ```
 
+## Notes && TODOs
 DATABASES:
     Redis - Will be used as a high-speed buffer. The Nodes push sensor/message data here.
             It'll handle the "live" state (who is connected, current readings...).
@@ -106,7 +113,8 @@ CHANGES:
 
     utils.tracker: Instead of providing a class for holding the server information via dict(), it'll use a Redis server
 
-
+OpenMP / Parallelize:
+Use OpenMP to parallelize packet processing, those threads can all fire PUBLISH commands to a single Redis instance.
 
 `_________________________________________________________________`
 42 79 20 66 65 6E 67 77 79 6E 28 20 6F 20 3E 20 6F 29

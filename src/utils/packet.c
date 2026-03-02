@@ -108,38 +108,42 @@ void free_packet_data(PacketData *data) {
 
 
 
+// Standalone test driver — excluded when building as library object
+#ifndef PACKET_LIB
+
 int main(int argc, char ** argv) {
 
     // Header and Body
     if (argc < 3) {
-        perror("Invalid args: %d != 3\nUsage: <Header> <Body>");
+        fprintf(stderr, "Invalid args: %d != 3\nUsage: packet_test <Header> <Body>\n", argc);
         exit(argc);
     }
 
-    char* header; char* body;
-    strncpy(header, argv[1], size_t(char [128])); strncpy(body, argv[2], size_t(char [128]));
-
-    if (header && body) {
+    char header[128];
+    char body[128];
+    strncpy(header, argv[1], sizeof(header) - 1);
+    header[sizeof(header) - 1] = '\0';
+    strncpy(body, argv[2], sizeof(body) - 1);
+    body[sizeof(body) - 1] = '\0';
 
     // Build a packet
     size_t packet_len;
     uint8_t *packet = build_packet(header, body, &packet_len);
-    
+
     printf("Built packet of %zu bytes\n", packet_len);
-    
+
     // Unpack the packet
     PacketData *data = unpack_packet(packet, packet_len);
-    
+
     printf("Header: %s\n", data->header);
     printf("Body: %.*s\n", (int)data->body_len, data->body);
     printf("Date: %s\n", data->date);
-    
+
     // Cleanup
     free_packet_data(data);
     free(packet);
 
     return EXIT_SUCCESS;
-    }
-
-    return EXIT_FAILURE;
 }
+
+#endif // PACKET_LIB
