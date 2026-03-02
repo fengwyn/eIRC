@@ -127,23 +127,22 @@ uint8_t* CommandHandler::handle_whisper(const std::string &command, size_t *pack
     std::vector<std::string> parts;
     size_t pos = 0;
     int splits = 0;
+    const int max_splits = 2;
 
-    while (pos < command.size() && splits < 2) {
+    while (pos < command.size()) {
         // Skip whitespace
         while (pos < command.size() && command[pos] == ' ') pos++;
         if (pos >= command.size()) break;
 
-        if (splits == 1) {
-            // Third token: rest of string is the message
+        if (splits >= max_splits) {
+            // Final token: rest of string is the message
             parts.push_back(command.substr(pos));
-            splits++;
             break;
         }
 
         size_t end = command.find(' ', pos);
         if (end == std::string::npos) {
             parts.push_back(command.substr(pos));
-            splits++;
             break;
         }
 

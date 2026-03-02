@@ -2,3 +2,4 @@
 echo "" > $(find . -type f | grep *log)
 rm -r $(find . -type d | grep __pycache__)
 rm  src/utils/*.pem
+rm -r build/
