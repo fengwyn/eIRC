@@ -97,7 +97,7 @@ class Server(threading.Thread):
 
                 # Unpack packet
                 read_packet: dict() = unpack_packet(packet)
-                header, body, date = read_packet['header'], read_packet['body'], read_packet['date']
+                header, body, date = read_packet['header'], read_packet['body'].decode('utf-8'), read_packet['date']
 
                 # The start of a message/body starts with '/' if it's a command
                 if body.startswith('/'):
@@ -130,7 +130,7 @@ class Server(threading.Thread):
                                 if whisper_packet['header'] == 'WHISPER':
 
                                     # Split target user and message
-                                    target_user, message = whisper_packet['body'].split('|', 1)
+                                    target_user, message = whisper_packet['body'].decode('utf-8').split('|', 1)
 
                                     # Find the target client
                                     target_index = self.usernames.index(target_user)

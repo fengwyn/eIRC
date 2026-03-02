@@ -19,7 +19,7 @@ from ..utils.crypto import KeyManager
 
 class Client(threading.Thread):
 
-    def __init__(self, hostname, port, username, use_queue=False):
+    def __init__(self, hostname, port, username, use_queue=False, keytype=1, privkey_path=None, pubkey_path=None, passwd=None):
 
         super().__init__()
         # Threaded socket lock
@@ -45,7 +45,7 @@ class Client(threading.Thread):
 
 
         # Cryptographic Module ---- _AUTO = 1 , _MANUAL = 0
-        self.KeyMan = KeyManager(keytype=1, privkey_path=None, pubkey_path=None, passwd=None)
+        self.KeyMan = KeyManager(keytype=1, privkey_path=privkey_path, pubkey_path=pubkey_path, passwd=passwd)
 
 
     # Used for connecting to new server  <Starts worker threads>
@@ -132,12 +132,36 @@ class Client(threading.Thread):
                 if not msg.strip():
                     continue
 
-                if msg == "/connect":
-                    if self.client is None:
-                        self.connect(self.hostname, self.port)
-                        # self.client.send(self.username.encode('ascii'))
-                        continue
+                # Command handling
+                if msg.startswith("/"):
 
+                    parts = msg.split(" ", 2)
+                    cmd = parts[0]
+
+                    match(cmd):
+
+                        # Used when reconnecting to IRC tracker server
+                        case '/connect':
+                            if self.client is None:
+                                self.connect(self.hostname, self.port)
+                                # self.client.send(self.username.encode('ascii'))   
+                                continue
+                            print("Connected.")
+
+
+                        # Direct messages will utilize asymmetric encryption
+                        case '/whisper':
+
+                            if len(parts) < 3:
+                                print("Usage: /whisper <recipient> <message>")
+                                continue
+
+                            # TODO: Re-integrate KeyManager encryption once key exchange protocol is complete.
+                            # Encryption plan: header becomes "/whisper|src|dst", body becomes ciphertext.
+                            # For now, whisper routing is handled entirely server-side.
+                        # eof command handling
+                    # eof case
+                print(f"Username:{self.username}|Message:{msg}")
                 # Build and send packet
                 packet = build_packet(self.username, msg)
                 self.client.send(packet)
@@ -156,6 +180,9 @@ class Client(threading.Thread):
 
             except Exception as e:
                 print("Write error:", e)
+                if self.client is None:
+                    # If we're here, client is None after /exit -- Working as intended
+                    print("Currently logged out of IRC. Enter /connect to reconnect to IRC server!")
                 break
 
 
@@ -183,7 +210,7 @@ class Client(threading.Thread):
                 try:
                     p = unpack_packet(packet)
                     sender = p['header']
-                    body   = p['body']
+                    body   = p['body'].decode('utf-8') # <--- *** Changed decoding in-client
                     date   = p['date']
                     print(f"[{date}] {sender}: {body}")
 

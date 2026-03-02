@@ -3,5 +3,12 @@ build/
 # Ignore debug logs
 log/
 
+# Ignore caches
+src/__pycache__
+src/client/__pycache__
+src/utils/__pycache__
+
 # Ignore editor configs
 .vscode
+
+.venv/
