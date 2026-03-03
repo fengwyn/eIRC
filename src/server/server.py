@@ -27,8 +27,9 @@ logger = logging.getLogger()
 # The connection will be TCP to ensure quality file wr/rd and content integrity
 class Server(threading.Thread):
 
-    def __init__(self, hostname, port, MAXIMUM_CONNECTIONS, MESSAGE_LENGTH, 
-                servername, creatorname, creatoraddr, isPrivate, passkey):
+    def __init__(self, hostname, port, MAXIMUM_CONNECTIONS, MESSAGE_LENGTH,
+                servername, creatorname, creatoraddr, isPrivate, passkey,
+                redis_client=None):
 
         # Server Address
         self.hostname = hostname
@@ -51,7 +52,8 @@ class Server(threading.Thread):
         self.commands = get_commands()
 
         # Initiate Node Tracker module
-        self.tracker = NodeTracker(servername, "{hostname}:{port}", creatorname, creatoraddr, isPrivate, passkey)
+        self.tracker = NodeTracker(servername, f"{hostname}:{port}", creatorname, creatoraddr,
+                                   isPrivate, passkey, redis_client=redis_client)
 
 
     # Sending Messages To All Connected Clients
@@ -195,8 +197,9 @@ class Server(threading.Thread):
                 self.usernames.append(user)
                 self.clients.append(client)
 
-                # Register user to Node Tracker
-                self.tracker.add_member(user, client)
+                # Register user to Node Tracker (store string address, not socket object)
+                user_address = f"{address[0]}:{address[1]}"
+                self.tracker.add_member(user, user_address)
 
                 # Print And Broadcast Username
                 print("Username is {}".format(user))
