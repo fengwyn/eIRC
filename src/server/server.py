@@ -172,6 +172,15 @@ class Server(threading.Thread):
                 # If not command, broadcast the message to everyone <sending the packet
                 self.broadcast(packet)
 
+                # Tap message into Redis Stream for ClickHouse analytics ingestion
+                # Commands are skipped (they hit 'continue' above) — only data messages land here
+                if self.tracker.redis:
+                    self.tracker.redis.xadd(
+                        f"eirc:stream:{self.tracker.get_name()}",
+                        {"user": header, "body": body, "date": date},
+                        maxlen=10000
+                    )
+
 
             # Let's make the closing statement a function
             except:
