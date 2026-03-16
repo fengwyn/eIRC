@@ -46,6 +46,13 @@ of which are:
 
 ## User Interaction and Design
 
+[DATABASES]
+
+- Redis & Clickhouse Clients: Installed via Python's VM pip requirements installation below
+- Redis Server: Installed on a Linux host;
+    $ apt install redis
+
+
 [PYTHON]
 Run from project root directory, Internet Relay Channel/ then:
 
@@ -53,6 +60,9 @@ Create Virtual Environment in Project's Root Directory (Python Version 3.13)
 $ python -m venv .venv
 Start Virtual Machine
 $ source .venv/bin/activate
+
+[REQUIREMENTS]
+$ pip3 install -r requirements.txt
 
 ```
 * Running Client (no Shell interface):      $ [WIP: python -m src.client.client <arguments>]
@@ -71,11 +81,14 @@ and following its use instructions, this will create a sub-server at the `Tracke
 If a user want's to register their own remote server they'll utilize `/register` and follow the use instructions.
 
 [C++]
-make              # builds build/node
-make packet-test  # builds standalone packet test binary
-make packet-so    # builds packet.so for Python ctypes
-make clean        # removes build/
+Build: 
+    make              # builds build/node
+    make packet-test  # builds standalone packet test binary
+    make packet-so    # builds packet.so for Python ctypes
+    make clean        # removes build/
 
+Run:    -H Node Address | -P Node Port | -m MAX MESSAGE LENGTH | -l MAXIMUM CLIENTS | -n Node Server Name | -c Admini 
+   $ ./node -H localhost -P 8888 -m 32 -l 128 -n "room" -c "admin" -a "127.0.0.1:9999" -i 0 -p ""
 
 ## Directory Structure
 ```
