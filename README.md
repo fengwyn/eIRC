@@ -48,6 +48,12 @@ of which are:
 
 [PYTHON]
 Run from project root directory, Internet Relay Channel/ then:
+
+Create Virtual Environment in Project's Root Directory (Python Version 3.13)
+$ python -m venv .venv
+Start Virtual Machine
+$ source .venv/bin/activate
+
 ```
 * Running Client (no Shell interface):      $ [WIP: python -m src.client.client <arguments>]
 * Running Client (with Shell interface):    $ [WIP: python -m src.client.main <arguments>]
