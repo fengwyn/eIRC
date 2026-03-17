@@ -1,0 +1,32 @@
+# eIRC infrastructure services
+# Usage:
+#   docker compose up -d            # start ClickHouse
+#   docker compose logs -f          # watch logs
+#   docker compose down             # stop
+#   docker compose down -v          # stop + delete data volumes
+
+services:
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: eirc-clickhouse
+    ports:
+      - "8123:8123"   # HTTP interface (used by clickhouse-connect Python client)
+      - "9000:9000"   # Native TCP interface (used by clickhouse-client CLI)
+    volumes:
+      - clickhouse_data:/home/pi/DB/Clickhouse/clickhouse
+      - clickhouse_logs:/home/pi/DB/Clickhouse/clickhouse-server
+      # Auto-run SQL files on first startup
+      - ./src/utils/clickhouse_schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+    environment:
+      CLICKHOUSE_DB: eirc
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    restart: unless-stopped
+
+volumes:
+  clickhouse_data:
+  clickhouse_logs:
