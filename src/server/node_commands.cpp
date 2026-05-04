@@ -13,7 +13,9 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <deque>
 #include <algorithm>
+#include <stdexcept>
 
 // C packet API
 #include <cstdint>
@@ -24,12 +26,70 @@ extern "C" {
 
 
 // ===========================================================================
+//  OselotState — ring buffer of recent [OSELOT] metadata events
+// ===========================================================================
+
+void OselotState::record(const std::string &nick, const std::string &line) {
+
+    std::lock_guard<std::mutex> guard(mtx);
+    if (buffer.size() >= MAX_HISTORY) {
+        buffer.pop_front();
+    }
+    buffer.push_back(OselotEvent{nick, line});
+}
+
+
+std::vector<OselotEvent> OselotState::recent(size_t n) const {
+
+    std::lock_guard<std::mutex> guard(mtx);
+    if (n > buffer.size()) n = buffer.size();
+    return std::vector<OselotEvent>(buffer.end() - n, buffer.end());
+}
+
+
+bool OselotState::empty() const {
+
+    std::lock_guard<std::mutex> guard(mtx);
+    return buffer.empty();
+}
+
+
+// ===========================================================================
+//  Helper — split string by whitespace (mirrors Python str.split())
+// ===========================================================================
+
+static std::vector<std::string> tokenize(const std::string &s) {
+
+    std::vector<std::string> tokens;
+    size_t pos = 0;
+
+    while (pos < s.size()) {
+        while (pos < s.size() && s[pos] == ' ') pos++;
+        if (pos >= s.size()) break;
+
+        size_t end = s.find(' ', pos);
+        if (end == std::string::npos) {
+            tokens.push_back(s.substr(pos));
+            break;
+        }
+        tokens.push_back(s.substr(pos, end - pos));
+        pos = end + 1;
+    }
+
+    return tokens;
+}
+
+
+// ===========================================================================
 //  Constructor
 // ===========================================================================
 
-CommandHandler::CommandHandler(NodeTracker *tracker, std::vector<std::string> *usernames)
+CommandHandler::CommandHandler(NodeTracker *tracker,
+                               std::vector<std::string> *usernames,
+                               OselotState *oselot)
     : tracker(tracker)
     , usernames(usernames)
+    , oselot(oselot)
 {
 }
 
@@ -70,6 +130,9 @@ uint8_t* CommandHandler::handle_command(const std::string &command, size_t *pack
     }
     if (base_command == "/whisper") {
         return handle_whisper(trimmed, packet_len);
+    }
+    if (base_command == "/oselot") {
+        return handle_oselot(trimmed, packet_len);
     }
 
     // Unrecognized command
@@ -169,4 +232,103 @@ uint8_t* CommandHandler::handle_whisper(const std::string &command, size_t *pack
     // Build whisper packet: body = "target_user|message"
     std::string body = whisper_user + "|" + message;
     return build_packet("WHISPER", body.c_str(), packet_len);
+}
+
+
+// ===========================================================================
+//  /oselot — subcommand router
+//  Usage: /oselot <status|history [N]|xfer>
+// ===========================================================================
+
+uint8_t* CommandHandler::handle_oselot(const std::string &command, size_t *packet_len) {
+
+    auto parts = tokenize(command);
+
+    if (parts.size() < 2) {
+        const char *usage =
+            "Usage: /oselot <status | history [N] | xfer>";
+        return build_packet("OSELOT", usage, packet_len);
+    }
+
+    const std::string &sub = parts[1];
+
+    if (sub == "status") {
+        return handle_oselot_status(packet_len);
+    }
+    if (sub == "xfer") {
+        return handle_oselot_xfer(packet_len);
+    }
+    if (sub == "history") {
+        size_t n = OselotState::MAX_HISTORY;
+        if (parts.size() >= 3) {
+            try {
+                long v = std::stol(parts[2]);
+                if (v < 1) v = 1;
+                if ((size_t)v > OselotState::MAX_HISTORY) {
+                    v = (long)OselotState::MAX_HISTORY;
+                }
+                n = (size_t)v;
+            } catch (const std::exception &) {
+                std::string err =
+                    "history: N must be an integer 1.." +
+                    std::to_string(OselotState::MAX_HISTORY);
+                return build_packet("OSELOT", err.c_str(), packet_len);
+            }
+        }
+        return handle_oselot_history(n, packet_len);
+    }
+
+    std::string err = "Unknown /oselot subcommand: " + sub;
+    return build_packet("OSELOT", err.c_str(), packet_len);
+}
+
+
+// ===========================================================================
+//  /oselot status — most recent [OSELOT] metadata line
+// ===========================================================================
+
+uint8_t* CommandHandler::handle_oselot_status(size_t *packet_len) {
+
+    if (!oselot || oselot->empty()) {
+        return build_packet("OSELOT", "no events recorded yet", packet_len);
+    }
+
+    auto events = oselot->recent(1);
+    const auto &e = events.back();
+    std::string body = e.nick + " | " + e.line;
+    return build_packet("OSELOT", body.c_str(), packet_len);
+}
+
+
+// ===========================================================================
+//  /oselot history [N] — last N (<=10) [OSELOT] metadata lines, oldest first
+// ===========================================================================
+
+uint8_t* CommandHandler::handle_oselot_history(size_t n, size_t *packet_len) {
+
+    if (!oselot || oselot->empty()) {
+        return build_packet("OSELOT", "no events recorded yet", packet_len);
+    }
+
+    auto events = oselot->recent(n);
+    std::string body;
+    for (size_t i = 0; i < events.size(); i++) {
+        if (i) body += '\n';
+        body += events[i].nick + " | " + events[i].line;
+    }
+    return build_packet("OSELOT", body.c_str(), packet_len);
+}
+
+
+// ===========================================================================
+//  /oselot xfer — placeholder for live chunked-transfer progress
+//  (1c) follow-up: report in-flight BEGIN/CHUNK/END state from OselotState.
+// ===========================================================================
+
+uint8_t* CommandHandler::handle_oselot_xfer(size_t *packet_len) {
+
+    return build_packet(
+        "OSELOT",
+        "xfer status: not implemented yet (planned)",
+        packet_len);
 }

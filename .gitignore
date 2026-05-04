@@ -1,3 +1,5 @@
+.gitignore
+
 # Ignore build directory
 build/
 # Ignore debug logs
@@ -13,3 +15,7 @@ src/utils/__pycache__
 .vscode
 
 .venv/
+
+# OSELOT
+oselot_context.md
+.claude

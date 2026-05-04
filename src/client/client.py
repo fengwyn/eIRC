@@ -161,7 +161,7 @@ class Client(threading.Thread):
                             # For now, whisper routing is handled entirely server-side.
                         # eof command handling
                     # eof case
-                print(f"Username:{self.username}|Message:{msg}")
+                #print(f"Username:{self.username}|Message:{msg}") # This is for debugging purposes only
                 # Build and send packet
                 packet = build_packet(self.username, msg)
                 self.client.send(packet)
