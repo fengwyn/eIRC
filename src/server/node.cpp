@@ -54,7 +54,8 @@ static std::unordered_set<std::string> get_commands() {
     return {
         "/sh", "/irc", "/servers", "/users", "/current", "/whisper",
         "/join", "/accept", "/reject", "/leave", "/delete",
-        "/sendfile", "/receivefile", "/exit", "/off", "/commands"
+        "/sendfile", "/receivefile", "/exit", "/off", "/commands",
+        "/oselot"
     };
 }
 
@@ -225,8 +226,9 @@ void Node::handle_client_leave(int client_fd) {
 
 void Node::handle(int client_fd) {
 
-    // One CommandHandler per client thread (mirrors Python)
-    CommandHandler cmd_handler(tracker, &usernames);
+    // One CommandHandler per client thread (mirrors Python).
+    // OselotState is owned by the Node and shared across threads.
+    CommandHandler cmd_handler(tracker, &usernames, &oselot_state);
 
     uint8_t buf[1024];
 
@@ -351,6 +353,51 @@ void Node::handle(int client_fd) {
             }
             // No response from handler — continue
             continue;
+        }
+
+
+        // --- OSELOT feed: nick-restricted ingestion ---------------------
+        // [OSELOT] / [OSELOT-XFER] lines may only originate from a client
+        // whose server-tracked nick begins with "oselot" (oselot, oselot1,
+        // oselot-recv, ...). Anything else gets an ERROR back and the line
+        // is dropped — never broadcast — so that arbitrary clients can't
+        // forge satellite metadata.
+        bool is_oselot_meta = body.rfind("[OSELOT] ", 0)      == 0;
+        bool is_oselot_xfer = body.rfind("[OSELOT-XFER] ", 0) == 0;
+
+        if (is_oselot_meta || is_oselot_xfer) {
+
+            // Look up the server-authoritative nick for this fd.
+            std::string sender;
+            {
+                std::lock_guard<std::mutex> guard(clients_mutex);
+                for (size_t i = 0; i < clients.size(); i++) {
+                    if (clients[i] == client_fd) {
+                        sender = usernames[i];
+                        break;
+                    }
+                }
+            }
+
+            if (sender.rfind("oselot", 0) != 0) {
+                const char *err =
+                    "OSELOT lines may only be emitted by oselot* nicks";
+                size_t plen = 0;
+                uint8_t *epk = build_packet("ERROR", err, &plen);
+                if (epk) {
+                    ::send(client_fd, epk, plen, 0);
+                    free(epk);
+                }
+                continue;
+            }
+
+            // Record metadata in the per-room ring buffer. Chunked-transfer
+            // lines pass through unrecorded — an external receiver
+            // (irc_chunked_receiver.py) reassembles them.
+            if (is_oselot_meta) {
+                oselot_state.record(sender, body);
+            }
+            // Fall through to broadcast.
         }
 
 

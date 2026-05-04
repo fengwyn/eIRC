@@ -13,9 +13,11 @@
 #include <cstdint>
 #include <cstddef>
 
+// Pulls in OselotState (value member below) and CommandHandler.
+#include "node_commands.h"
+
 // Forward declarations
 class NodeTracker;
-class CommandHandler;
 
 
 class Node {
@@ -43,6 +45,11 @@ private:
 
     // Node tracker instance (tracks active users, admins)
     NodeTracker *tracker;
+
+    // Per-room ring buffer of recent [OSELOT] metadata events.
+    // Populated in handle() when an oselot* nick emits an [OSELOT] line;
+    // queried by /oselot status and /oselot history.
+    OselotState oselot_state;
 
 
     // --- Internal methods ---

@@ -87,7 +87,7 @@ Build:
     make packet-so    # builds packet.so for Python ctypes
     make clean        # removes build/
 
-Run:    -H Node Address | -P Node Port | -m MAX MESSAGE LENGTH | -l MAXIMUM CLIENTS | -n Node Server Name | -c Admini 
+Run:    -H Node Address | -P Node Port | -m MAX MESSAGE LENGTH | -l MAXIMUM CLIENTS | -n Node Server Name | -c Admini -a "admin_address:admin_port" -i <USE KEY ? : 0 for NO, 1 for YES> -p "keyphrase, empty if none"
    $ ./node -H localhost -P 8888 -m 32 -l 128 -n "room" -c "admin" -a "127.0.0.1:9999" -i 0 -p ""
 
 ## Directory Structure
