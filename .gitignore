@@ -13,9 +13,15 @@ src/utils/__pycache__
 
 # Ignore editor configs
 .vscode
+<<<<<<< HEAD
 
 .venv/
 
 # OSELOT
 oselot_context.md
 .claude
+=======
+.claude
+.venv/
+oselot_context.md
+>>>>>>> 399d6ea (.gitignore updated)
